@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Poke DUO</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0d1117; color: #e6edf3; font-family: system-ui, Segoe UI, Arial, sans-serif; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+
+  #topbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #161b22; border-bottom: 1px solid #30363d; flex: none; }
+  #topbar h1 { font-size: 12px; margin: 0 6px 0 0; color: #adbac7; font-weight: 700; }
+  #topbar button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+  #topbar button:hover { border-color: #58a6ff; }
+  #topbar .hint { margin-left: auto; font-size: 10px; color: #6e7681; }
+
+  #grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; min-height: 0; position: relative; }
+  .panel { position: relative; display: flex; flex-direction: column; background: #010409; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; min-height: 0; }
+  .panel.expanded { position: absolute; inset: 3px; z-index: 10; }
+  .panel .head { display: flex; align-items: center; gap: 6px; padding: 3px 8px; background: #161b22; font-size: 11px; flex: none; }
+  .panel .dot { width: 7px; height: 7px; border-radius: 50%; background: #6e7681; flex: none; }
+  .panel .dot.on { background: #3fb950; box-shadow: 0 0 6px #3fb95099; }
+  .panel .titulo { font-weight: 700; }
+  .panel .status { color: #8b949e; margin-left: auto; }
+  .panel webview { flex: 1; border: none; background: #000; }
+
+  .btnExp { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 18px; height: 18px; padding: 0; margin-left: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .btnExp:hover { border-color: #58a6ff; }
+
+  .btnDev { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 18px; height: 18px; padding: 0; margin-left: 4px; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .btnDev:hover { border-color: #58a6ff; }
+
+  .btnReload { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 18px; height: 18px; padding: 0; margin-left: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .btnReload:hover { border-color: #58a6ff; }
+  .btnReload.girando { animation: girar 0.6s linear; }
+  @keyframes girar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .zoomCtrl { display: flex; align-items: center; gap: 3px; margin-left: 4px; flex: none; }
+  .zoomCtrl button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 16px; height: 16px; line-height: 1; padding: 0; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .zoomCtrl button:hover { border-color: #58a6ff; }
+  .zoomCtrl .zoomLabel { color: #8b949e; font-size: 10px; min-width: 28px; text-align: center; }
+
+  #overlayHint { position: absolute; top: 8px; right: 8px; font-size: 11px; color: #6e7681; background: #161b22cc; padding: 4px 8px; border-radius: 6px; pointer-events: none; }
+
+  /* ===== modo limpo: some com a interface do launcher, so fica o jogo ===== */
+  /* A janela continua so maximizada (nao fullscreen real), entao a barra de */
+  /* tarefas do Windows nunca some - so o topbar e o cabecalho de cada conta. */
+  body.modo-limpo #topbar { display: none; }
+  body.modo-limpo #grid { gap: 0; padding: 0; }
+  body.modo-limpo .panel { border: none; border-radius: 0; }
+  body.modo-limpo .panel .head { display: none; }
+  body.modo-limpo .panel.expanded { inset: 0; }
+
+  /* ===== modal de contas ===== */
+  #modalContas { position: fixed; inset: 0; background: #010409cc; display: none; align-items: center; justify-content: center; z-index: 50; }
+  #modalContas.on { display: flex; }
+  #modalContas .caixa { width: 480px; max-width: 92vw; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
+  #modalContas h2 { margin: 0 0 4px; font-size: 15px; }
+  #modalContas p.sub { margin: 0 0 14px; font-size: 12px; color: #8b949e; }
+  .contaBloco { border: 1px solid #30363d; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+  .contaBloco h3 { margin: 0 0 8px; font-size: 12.5px; color: #adbac7; }
+  .contaBloco label { display: block; font-size: 11.5px; color: #8b949e; margin: 6px 0 3px; }
+  .contaBloco input[type=text], .contaBloco input[type=password], .contaBloco input[type=email] {
+    width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; padding: 7px 8px; font-size: 13px;
+  }
+  .contaBloco .linhaAuto { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #adbac7; }
+  #modalContas .rodape { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  #modalContas .rodape button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 12.5px; }
+  #modalContas .rodape button.primary { background: #238636; border-color: #2ea043; }
+  #modalContas .rodape button:hover { filter: brightness(1.15); }
+
+  #btnDoar { background: #7c4a1e !important; border-color: #a86a2f !important; }
+  #btnDoar:hover { border-color: #ffb84d !important; }
+
+  /* ===== modal de doacao ===== */
+  #modalDoacao { position: fixed; inset: 0; background: #010409cc; display: none; align-items: center; justify-content: center; z-index: 60; }
+  #modalDoacao.on { display: flex; }
+  #modalDoacao .caixa { width: 340px; max-width: 92vw; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; text-align: center; }
+  #modalDoacao h2 { margin: 0 0 4px; font-size: 15px; }
+  #modalDoacao p.sub { margin: 0 0 14px; font-size: 12px; color: #8b949e; }
+  #modalDoacao img { width: 220px; height: 220px; border-radius: 8px; background: #fff; padding: 8px; }
+  #modalDoacao .codigoPix { margin-top: 12px; font-size: 10.5px; color: #8b949e; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px; word-break: break-all; text-align: left; max-height: 70px; overflow-y: auto; }
+  #modalDoacao .rodape { display: flex; gap: 8px; justify-content: center; margin-top: 14px; }
+  #modalDoacao .rodape button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 12.5px; }
+  #modalDoacao .rodape button.primary { background: #238636; border-color: #2ea043; }
+  #modalDoacao .rodape button:hover { filter: brightness(1.15); }
+
+</style>
+</head>
+<body>
+
+  <div id="topbar">
+    <h1>✨ Poke DUO</h1>
+    <button id="btnContas">👤 Contas</button>
+    <button id="btnLoginAgora">▶ Logar as duas</button>
+    <button id="btnRecarregar">⟳ Recarregar</button>
+    <button id="btnDoar" title="Curtiu o launcher? Considere apoiar :)">☕ Doar um café</button>
+    <button id="btnOcultarUI" title="Esconder a interface e deixar só os jogos (Ctrl+H pra trazer de volta)">🙈</button>
+    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = esconder interface · ESC = voltar à divisão</span>
+  </div>
+
+  <div id="grid">
+    <div class="panel" data-i="0">
+      <div class="head">
+        <span class="dot" id="dot0"></span><span class="titulo" id="titulo0">Conta 1</span><span class="status" id="status0">carregando…</span>
+        <div class="zoomCtrl">
+          <button class="btnZoomOut" data-i="0" title="Diminuir zoom">−</button>
+          <span class="zoomLabel" id="zoomLabel0">100%</span>
+          <button class="btnZoomIn" data-i="0" title="Aumentar zoom">+</button>
+        </div>
+        <button class="btnReload" data-i="0" title="Recarregar esta conta (Ctrl+F5 dentro do painel = recarregar ignorando cache)">⟳</button>
+        <button class="btnDev" data-i="0" title="Abrir DevTools (ou F12 dentro do jogo)">🛠</button>
+        <button class="btnExp" data-i="0">⛶</button>
+      </div>
+    </div>
+    <div class="panel" data-i="1">
+      <div class="head">
+        <span class="dot" id="dot1"></span><span class="titulo" id="titulo1">Conta 2</span><span class="status" id="status1">carregando…</span>
+        <div class="zoomCtrl">
+          <button class="btnZoomOut" data-i="1" title="Diminuir zoom">−</button>
+          <span class="zoomLabel" id="zoomLabel1">100%</span>
+          <button class="btnZoomIn" data-i="1" title="Aumentar zoom">+</button>
+        </div>
+        <button class="btnReload" data-i="1" title="Recarregar esta conta (Ctrl+F5 dentro do painel = recarregar ignorando cache)">⟳</button>
+        <button class="btnDev" data-i="1" title="Abrir DevTools (ou F12 dentro do jogo)">🛠</button>
+        <button class="btnExp" data-i="1">⛶</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalContas">
+    <div class="caixa">
+      <h2>Contas</h2>
+      <p class="sub">Salvo criptografado no seu PC. Com "login automático" ligado, o launcher tenta preencher e entrar sozinho sempre que a tela de login aparecer.</p>
+      <div class="contaBloco">
+        <h3>Conta 1</h3>
+        <label>Nome do personagem</label><input type="text" id="nome0" autocomplete="off" placeholder="Ex: Ash">
+        <label>E-mail</label><input type="text" id="email0" autocomplete="off">
+        <label>Senha</label><input type="password" id="senha0" autocomplete="off">
+        <div class="linhaAuto"><input type="checkbox" id="auto0"><label for="auto0" style="margin:0;">Login automático</label></div>
+      </div>
+      <div class="contaBloco">
+        <h3>Conta 2</h3>
+        <label>Nome do personagem</label><input type="text" id="nome1" autocomplete="off" placeholder="Ex: Misty">
+        <label>E-mail</label><input type="text" id="email1" autocomplete="off">
+        <label>Senha</label><input type="password" id="senha1" autocomplete="off">
+        <div class="linhaAuto"><input type="checkbox" id="auto1"><label for="auto1" style="margin:0;">Login automático</label></div>
+      </div>
+      <div class="rodape">
+        <button id="btnFechar">Fechar</button>
+        <button id="btnSalvar" class="primary">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalDoacao">
+    <div class="caixa">
+      <h2>☕ Apoie o Poke DUO</h2>
+      <p class="sub">Se o launcher te ajudou, um cafezinho via Pix é muito bem-vindo!</p>
+      <img src="pix-qrcode.png" alt="QR Code Pix">
+      <div class="codigoPix" id="codigoPix">00020101021126580014br.gov.bcb.pix0136df14bfa9-a9aa-41eb-9e93-b327d51c8ee65204000053039865802BR5914SUIANE E SILVA6009TAILANDIA62070503***63044309</div>
+      <div class="rodape">
+        <button id="btnFecharDoar">Fechar</button>
+        <button id="btnCopiarPix" class="primary">Copiar código Pix</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const GAME_URL = 'https://pokepixel.nietore.com/play/?ref=amigotreefee6d30495';
+const grid = document.getElementById('grid');
+const webviews = [];
+const contentsIdParaIndex = {};
+let contas = [{ nome: '', email: '', senha: '', auto: false }, { nome: '', email: '', senha: '', auto: false }];
+
+// mostra o nome do personagem no cabeçalho do painel (se tiver sido definido)
+function atualizarTitulos() {
+  [0, 1].forEach(i => {
+    const el = document.getElementById('titulo' + i);
+    if (el) el.textContent = (contas[i] && contas[i].nome) ? contas[i].nome : ('Conta ' + (i + 1));
+  });
+}
+
+// zoom nativo de cada painel (igual Ctrl+/- do navegador). 100% = zoom normal.
+const zoomState = [100, 100];
+function aplicarZoom(i) {
+  const wv = webviews[i];
+  if (!wv) return;
+  try { wv.setZoomFactor(zoomState[i] / 100); } catch {}
+}
+
+// ---------- cria os 2 paineis ----------
+[...grid.children].forEach((panel, i) => {
+  const wv = document.createElement('webview');
+  wv.setAttribute('partition', 'persist:pp-conta' + (i + 1));
+  wv.setAttribute('src', GAME_URL);
+  wv.setAttribute('allowpopups', '');
+  panel.appendChild(wv);
+  webviews.push(wv);
+
+  wv.addEventListener('dom-ready', () => {
+    try { contentsIdParaIndex[wv.getWebContentsId()] = i; } catch {}
+    tentarLoginAutomatico(i);
+    tentarOcultarDiscord(i);
+    tentarOcultarBanner(i);
+    aplicarZoom(i);
+  });
+  wv.addEventListener('did-navigate', () => {
+    document.getElementById('status' + i).textContent = 'conectando…';
+    document.getElementById('dot' + i).className = 'dot';
+    aplicarZoom(i); // recarregou -> reaplica o zoom, senão volta pro padrão
+  });
+  wv.addEventListener('did-stop-loading', () => {
+    document.getElementById('status' + i).textContent = 'em execução';
+    document.getElementById('dot' + i).className = 'dot on';
+    tentarOcultarDiscord(i);
+    tentarOcultarBanner(i);
+  });
+});
+
+// ---------- zoom por painel ----------
+function atualizarZoomLabel(i) { document.getElementById('zoomLabel' + i).textContent = zoomState[i] + '%'; }
+document.querySelectorAll('.btnZoomIn').forEach(b => b.onclick = () => {
+  const i = +b.dataset.i;
+  zoomState[i] = Math.min(300, zoomState[i] + 10);
+  atualizarZoomLabel(i); aplicarZoom(i);
+});
+document.querySelectorAll('.btnZoomOut').forEach(b => b.onclick = () => {
+  const i = +b.dataset.i;
+  zoomState[i] = Math.max(30, zoomState[i] - 10);
+  atualizarZoomLabel(i); aplicarZoom(i);
+});
+
+// ---------- expandir / restaurar painel ----------
+function toggleExpand(i) {
+  const painel = grid.children[i];
+  if (!painel) return;
+  const jaExpandido = painel.classList.contains('expanded');
+  [...grid.children].forEach(p => p.classList.remove('expanded'));
+  if (!jaExpandido) painel.classList.add('expanded');
+}
+function voltarDivisao() {
+  [...grid.children].forEach(p => p.classList.remove('expanded'));
+}
+document.querySelectorAll('.btnExp').forEach(b => b.onclick = () => toggleExpand(+b.dataset.i));
+document.querySelectorAll('.btnDev').forEach(b => b.onclick = () => {
+  try { webviews[+b.dataset.i].openDevTools(); } catch {}
+});
+document.querySelectorAll('.btnReload').forEach(b => b.onclick = () => {
+  const i = +b.dataset.i;
+  b.classList.remove('girando'); void b.offsetWidth; b.classList.add('girando');
+  try { webviews[i].reload(); } catch {}
+});
+
+// ESC no teclado do host (fora do webview) também volta a divisão
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') voltarDivisao();
+  // Ctrl+F5 com o foco fora do webview (ex: em cima de algum botão da barra):
+  // recarrega os dois painéis ignorando cache. Dentro do webview quem cuida
+  // disso é o main.js (o teclado fica preso lá dentro enquanto o jogo tem foco).
+  if (e.ctrlKey && e.key === 'F5') {
+    e.preventDefault();
+    webviews.forEach(w => { try { w.reloadIgnoringCache(); } catch {} });
+  }
+});
+
+// clique direito dentro do jogo, ESC dentro do jogo e os atalhos Ctrl+1/Ctrl+2 chegam por aqui (via main.js)
+window.ppAPI.onHotkey((k) => {
+  if (k === 'esc') voltarDivisao();
+  else if (k === 'toggleUI') toggleModoLimpo();
+  else if (k.startsWith('expand')) toggleExpand(+k.slice(6));
+  else if (k.startsWith('ctx')) {
+    const contentsId = +k.slice(3);
+    const i = contentsIdParaIndex[contentsId];
+    if (i !== undefined) toggleExpand(i);
+  }
+});
+
+// ---------- login automático ----------
+// Heurística: procura um campo de e-mail/usuário e um de senha, preenche e clica no botão de entrar.
+// Como ainda não sei os seletores exatos da tela de login do Pokepixel Idle, isso tenta várias
+// combinações comuns. Se não funcionar, me diga os nomes/ids dos campos (inspecionar elemento)
+// que eu ajusto o script certinho.
+function scriptLogin(email, senha) {
+  return `(function(){
+    if (window.__ppLoginOk) return;
+    const EMAIL = ${JSON.stringify(email)};
+    const SENHA = ${JSON.stringify(senha)};
+    function setVal(el, val) {
+      const proto = Object.getPrototypeOf(el);
+      const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+      if (desc && desc.set) desc.set.call(el, val); else el.value = val;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    function tentar() {
+      const campos = [...document.querySelectorAll('input')];
+      const campoSenha = campos.find(i => i.type === 'password');
+      if (!campoSenha) return false;
+      const campoEmail = campos.find(i => i !== campoSenha && (i.type === 'email' || i.type === 'text' || !i.type) &&
+        /email|e-mail|usuario|user|login|nick/i.test((i.name||'') + ' ' + (i.id||'') + ' ' + (i.placeholder||'')));
+      const alvoEmail = campoEmail || campos.find(i => i !== campoSenha && (i.type === 'email' || i.type === 'text'));
+      if (!alvoEmail) return false;
+      setVal(alvoEmail, EMAIL);
+      setVal(campoSenha, SENHA);
+      const botoes = [...document.querySelectorAll('button, input[type=submit]')];
+      const botao = botoes.find(b => /entrar|login|sign\\s*in|acessar|conectar|log\\s*in/i.test((b.textContent || b.value || '')));
+      setTimeout(() => {
+        if (botao && !botao.disabled) { window.__ppLoginOk = true; botao.click(); }
+        else if (campoSenha.form) { window.__ppLoginOk = true; campoSenha.form.requestSubmit ? campoSenha.form.requestSubmit() : campoSenha.form.submit(); }
+      }, 500);
+      return true;
+    }
+    if (!tentar()) {
+      let n = 0;
+      const iv = setInterval(() => { n++; if (tentar() || n > 40) clearInterval(iv); }, 500);
+    }
+  })();`;
+}
+function tentarLoginAutomatico(i) {
+  const c = contas[i];
+  if (!c || !c.auto || !c.email || !c.senha) return;
+  webviews[i].executeJavaScript(scriptLogin(c.email, c.senha)).catch(() => {});
+}
+
+// ---------- ocultar o link do Discord da interface ----------
+// Só esconde visualmente (display:none) o bloco que contém "discord.gg" — não clica
+// em nada nem simula interação, é a mesma ideia de um bloqueador de anúncio. Fica
+// observando a página pra esconder de novo se ela recriar o elemento.
+function scriptOcultarDiscord() {
+  return `(function(){
+    function ocultar() {
+      const textos = [...document.querySelectorAll('body *')]
+        .filter(el => el.children.length === 0 && /discord\\.gg/i.test(el.textContent || ''));
+      textos.forEach(el => {
+        let alvo = el, atual = el;
+        for (let n = 0; n < 4 && atual.parentElement; n++) {
+          atual = atual.parentElement;
+          const r = atual.getBoundingClientRect();
+          if (r.width > 0 && r.width < 400 && r.height > 0 && r.height < 120) alvo = atual;
+        }
+        alvo.style.setProperty('display', 'none', 'important');
+      });
+    }
+    ocultar();
+    if (!window.__ppDiscordObs) {
+      window.__ppDiscordObs = new MutationObserver(ocultar);
+      window.__ppDiscordObs.observe(document.body, { childList: true, subtree: true });
+    }
+  })();`;
+}
+function tentarOcultarDiscord(i) {
+  webviews[i].executeJavaScript(scriptOcultarDiscord()).catch(() => {});
+}
+
+// ---------- ocultar o banner promocional ----------
+// Mesma ideia da função acima: só esconde visualmente (display:none), nada de
+// clique/interação. Seletor principal é a classe "pokeidle-promo-banner" (vista
+// no DevTools). Fallback: qualquer <img> cujo src contenha "promotional-banner",
+// caso o jogo troque o nome da classe no futuro.
+function scriptOcultarBanner() {
+  return `(function(){
+    function ocultar() {
+      document.querySelectorAll('.pokeidle-promo-banner').forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+      });
+      document.querySelectorAll('img[src*="promotional-banner"]').forEach(img => {
+        let alvo = img.closest('aside, div') || img;
+        alvo.style.setProperty('display', 'none', 'important');
+      });
+    }
+    ocultar();
+    if (!window.__ppBannerObs) {
+      window.__ppBannerObs = new MutationObserver(ocultar);
+      window.__ppBannerObs.observe(document.body, { childList: true, subtree: true });
+    }
+  })();`;
+}
+function tentarOcultarBanner(i) {
+  webviews[i].executeJavaScript(scriptOcultarBanner()).catch(() => {});
+}
+
+// ---------- modal de contas ----------
+const modal = document.getElementById('modalContas');
+document.getElementById('btnContas').onclick = () => { preencherModal(); modal.classList.add('on'); };
+document.getElementById('btnFechar').onclick = () => modal.classList.remove('on');
+function preencherModal() {
+  [0, 1].forEach(i => {
+    document.getElementById('nome' + i).value = contas[i].nome || '';
+    document.getElementById('email' + i).value = contas[i].email || '';
+    document.getElementById('senha' + i).value = contas[i].senha || '';
+    document.getElementById('auto' + i).checked = !!contas[i].auto;
+  });
+}
+document.getElementById('btnSalvar').onclick = async () => {
+  [0, 1].forEach(i => {
+    contas[i] = {
+      nome: document.getElementById('nome' + i).value.trim(),
+      email: document.getElementById('email' + i).value.trim(),
+      senha: document.getElementById('senha' + i).value,
+      auto: document.getElementById('auto' + i).checked
+    };
+  });
+  atualizarTitulos();
+  await window.ppAPI.saveCreds(contas);
+  modal.classList.remove('on');
+};
+
+// ---------- modal de doacao (pix) ----------
+const modalDoacao = document.getElementById('modalDoacao');
+document.getElementById('btnDoar').onclick = () => modalDoacao.classList.add('on');
+document.getElementById('btnFecharDoar').onclick = () => modalDoacao.classList.remove('on');
+document.getElementById('btnCopiarPix').onclick = async () => {
+  const btn = document.getElementById('btnCopiarPix');
+  const codigo = document.getElementById('codigoPix').textContent.trim();
+  await window.ppAPI.copiarTexto(codigo);
+  const original = btn.textContent;
+  btn.textContent = 'Copiado! ✅';
+  setTimeout(() => { btn.textContent = original; }, 1800);
+};
+
+document.getElementById('btnLoginAgora').onclick = () => { [0, 1].forEach(i => tentarLoginAutomatico(i)); };
+document.getElementById('btnRecarregar').onclick = () => webviews.forEach(w => w.reload());
+
+// Modo limpo: esconde topbar + cabeçalho das contas, so sobra o jogo (a janela
+// ja fica maximizada por baixo, entao a barra de tarefas do Windows continua
+// aparecendo). Ctrl+H (atalho global, tratado no main.js) alterna de volta.
+function toggleModoLimpo() { document.body.classList.toggle('modo-limpo'); }
+document.getElementById('btnOcultarUI').onclick = toggleModoLimpo;
+
+// ---------- carrega contas salvas ----------
+(async () => {
+  const salvo = await window.ppAPI.loadCreds();
+  if (salvo && Array.isArray(salvo) && salvo.length === 2) contas = salvo;
+  atualizarTitulos();
+})();
+</script>
+</body>
+</html>
