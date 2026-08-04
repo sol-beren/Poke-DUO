@@ -13,6 +13,7 @@
      de "no-drag" pra continuarem clicaveis normalmente. */
   #topbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #161b22; border-bottom: 1px solid #30363d; flex: none; -webkit-app-region: drag; }
   #topbar h1 { font-size: 12px; margin: 0 6px 0 0; color: #adbac7; font-weight: 700; }
+  #topbar h1 small#versao { font-size: 9px; font-weight: 400; color: #6e7681; margin-left: 4px; }
   #topbar button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; -webkit-app-region: no-drag; }
   #topbar button:hover { border-color: #58a6ff; }
   #topbar .hint { margin-left: auto; font-size: 10px; color: #6e7681; }
@@ -43,6 +44,9 @@
   .btnReload.girando { animation: girar 0.6s linear; }
   @keyframes girar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+  .btnHard { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 18px; height: 18px; padding: 0; margin-left: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .btnHard:hover { border-color: #f85149; color: #f85149; }
+
   .zoomCtrl { display: flex; align-items: center; gap: 3px; margin-left: 4px; flex: none; }
   .zoomCtrl button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 4px; width: 16px; height: 16px; line-height: 1; padding: 0; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; }
   .zoomCtrl button:hover { border-color: #58a6ff; }
@@ -58,6 +62,11 @@
   body.modo-limpo .panel { border: none; border-radius: 0; }
   body.modo-limpo .panel .head { display: none; }
   body.modo-limpo .panel.expanded { inset: 0; }
+  /* linha fininha entre os dois paineis no modo tela cheia, so pra deixar claro
+     que sao duas telas separadas (sem ela, sem gap e sem borda, ficava tudo
+     parecendo uma unica tela so). Some sozinha quando um painel esta expandido,
+     porque o painel expandido cobre a grade inteira por cima. */
+  body.modo-limpo #grid > .panel:first-child { border-right: 1px solid rgba(255,255,255,0.14); }
 
   /* ===== modal de contas ===== */
   #modalContas { position: fixed; inset: 0; background: #010409cc; display: none; align-items: center; justify-content: center; z-index: 50; }
@@ -98,13 +107,13 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO</h1>
+    <h1>✨ Poke DUO <small id="versao">v1.0.3</small></h1>
     <button id="btnContas">👤 Contas</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
     <button id="btnDoar" title="Curtiu o launcher? Considere apoiar :)">☕ Doar um café</button>
     <button id="btnOcultarUI" title="Modo tela cheia: esconde toda a interface, só ficam os jogos (ESC ou Ctrl+H pra voltar)">🙈</button>
-    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = modo tela cheia · ESC = voltar</span>
+    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = modo tela cheia · Ctrl+B = botão de servidor · ESC = voltar</span>
     <div id="winCtrls">
       <button id="btnWinMin" title="Minimizar">─</button>
       <button id="btnWinMax" title="Maximizar/Restaurar">▢</button>
@@ -122,6 +131,7 @@
           <button class="btnZoomIn" data-i="0" title="Aumentar zoom">+</button>
         </div>
         <button class="btnReload" data-i="0" title="Recarregar esta conta (Ctrl+F5 dentro do painel = recarregar ignorando cache)">⟳</button>
+        <button class="btnHard" data-i="0" title="Reset forçado: recria o painel do zero (use quando travar e o recarregar normal não resolver)">⏻</button>
         <button class="btnDev" data-i="0" title="Abrir DevTools (ou F12 dentro do jogo)">🛠</button>
         <button class="btnExp" data-i="0">⛶</button>
       </div>
@@ -135,6 +145,7 @@
           <button class="btnZoomIn" data-i="1" title="Aumentar zoom">+</button>
         </div>
         <button class="btnReload" data-i="1" title="Recarregar esta conta (Ctrl+F5 dentro do painel = recarregar ignorando cache)">⟳</button>
+        <button class="btnHard" data-i="1" title="Reset forçado: recria o painel do zero (use quando travar e o recarregar normal não resolver)">⏻</button>
         <button class="btnDev" data-i="1" title="Abrir DevTools (ou F12 dentro do jogo)">🛠</button>
         <button class="btnExp" data-i="1">⛶</button>
       </div>
@@ -202,20 +213,22 @@ function aplicarZoom(i) {
   try { wv.setZoomFactor(zoomState[i] / 100); } catch {}
 }
 
-// ---------- cria os 2 paineis ----------
-[...grid.children].forEach((panel, i) => {
+// ---------- cria (ou recria) o webview de um painel ----------
+function criarWebview(i) {
+  const panel = grid.children[i];
   const wv = document.createElement('webview');
   wv.setAttribute('partition', 'persist:pp-conta' + (i + 1));
   wv.setAttribute('src', GAME_URL);
   wv.setAttribute('allowpopups', '');
   panel.appendChild(wv);
-  webviews.push(wv);
+  webviews[i] = wv;
 
   wv.addEventListener('dom-ready', () => {
     try { contentsIdParaIndex[wv.getWebContentsId()] = i; } catch {}
     tentarLoginAutomatico(i);
     tentarOcultarDiscord(i);
     tentarOcultarBanner(i);
+    tentarServerBtn(i);
     aplicarZoom(i);
   });
   wv.addEventListener('did-navigate', () => {
@@ -228,8 +241,27 @@ function aplicarZoom(i) {
     document.getElementById('dot' + i).className = 'dot on';
     tentarOcultarDiscord(i);
     tentarOcultarBanner(i);
+    tentarServerBtn(i);
   });
-});
+  return wv;
+}
+
+// ---------- cria os 2 paineis ----------
+[...grid.children].forEach((panel, i) => criarWebview(i));
+
+// Reset forçado: quando o jogo trava e nem "recarregar" (que só pede pro mesmo
+// processo já pendurado navegar de novo) resolve. Em vez de só recarregar,
+// destrói o <webview> inteiro (mata o processo dele) e cria um novo do zero
+// com a mesma partition - a sessão/login continua salva (é a mesma partition),
+// só o processo travado é que é substituído por um novo, limpo.
+function resetForcado(i) {
+  const status = document.getElementById('status' + i);
+  if (status) status.textContent = 'reiniciando…';
+  const dot = document.getElementById('dot' + i);
+  if (dot) dot.className = 'dot';
+  try { webviews[i] && webviews[i].remove(); } catch {}
+  criarWebview(i);
+}
 
 // ---------- zoom por painel ----------
 function atualizarZoomLabel(i) { document.getElementById('zoomLabel' + i).textContent = zoomState[i] + '%'; }
@@ -264,6 +296,7 @@ document.querySelectorAll('.btnReload').forEach(b => b.onclick = () => {
   b.classList.remove('girando'); void b.offsetWidth; b.classList.add('girando');
   try { webviews[i].reload(); } catch {}
 });
+document.querySelectorAll('.btnHard').forEach(b => b.onclick = () => resetForcado(+b.dataset.i));
 
 // ESC no teclado do host (fora do webview): sai do modo tela cheia (se estiver
 // ligado) e também volta a divisão dos painéis
@@ -288,6 +321,7 @@ window.ppAPI.onHotkey((k) => {
     const i = contentsIdParaIndex[contentsId];
     if (i !== undefined) toggleExpand(i);
   }
+  else if (k === 'toggleServerBtn') alternarServerBtn();
   else if (k === 'winMaximized') atualizarIconeMax(true);
   else if (k === 'winRestored') atualizarIconeMax(false);
 });
@@ -394,6 +428,35 @@ function scriptOcultarBanner() {
 }
 function tentarOcultarBanner(i) {
   webviews[i].executeJavaScript(scriptOcultarBanner()).catch(() => {});
+}
+
+// ---------- esconder o botao de trocar de servidor (world-servers-fab) ----------
+// Fica escondido por padrao em cada painel (comeca com window.__ppServerBtnEsconder
+// = true na primeira vez que o script roda nesse webview). Ctrl+B alterna
+// mostrar/esconder nos dois paineis ao mesmo tempo. Igual ao discord/banner,
+// usa MutationObserver pra continuar escondido se o jogo recriar o elemento.
+let servidorBtnEscondido = true;
+function scriptServerBtn(esconder) {
+  return `(function(){
+    window.__ppServerBtnEsconder = ${esconder};
+    function aplicar() {
+      document.querySelectorAll('.world-servers-fab').forEach(el => {
+        el.style.setProperty('display', window.__ppServerBtnEsconder ? 'none' : '', 'important');
+      });
+    }
+    aplicar();
+    if (!window.__ppServerBtnObs) {
+      window.__ppServerBtnObs = new MutationObserver(aplicar);
+      window.__ppServerBtnObs.observe(document.body, { childList: true, subtree: true });
+    }
+  })();`;
+}
+function tentarServerBtn(i) {
+  webviews[i].executeJavaScript(scriptServerBtn(servidorBtnEscondido)).catch(() => {});
+}
+function alternarServerBtn() {
+  servidorBtnEscondido = !servidorBtnEscondido;
+  webviews.forEach((_wv, i) => tentarServerBtn(i));
 }
 
 // ---------- modal de contas ----------

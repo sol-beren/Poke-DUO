@@ -56,6 +56,18 @@ app.on('web-contents-created', (_e, contents) => {
       // enquanto ele tem foco, entao precisa ser pego aqui e repassado pro
       // host - mesma logica do ESC acima.
       try { contents.hostWebContents && contents.hostWebContents.send('hotkey', 'toggleUI'); } catch {}
+    } else if (input.control && input.key.toLowerCase() === 'b') {
+      // Ctrl+B com o foco dentro do jogo: mesma ideia, mostra/esconde o
+      // botaozinho de servidor (world-servers-fab) do canto do jogo.
+      try { contents.hostWebContents && contents.hostWebContents.send('hotkey', 'toggleServerBtn'); } catch {}
+    } else if (input.control && input.key === '1') {
+      // Ctrl+1 / Ctrl+2 com o foco dentro do jogo (mesma logica de sempre:
+      // o teclado fica preso no webview, entao precisa ser pego aqui e
+      // repassado pro host - faltava isso, por isso so funcionava clicando
+      // fora das instancias).
+      try { contents.hostWebContents && contents.hostWebContents.send('hotkey', 'expand0'); } catch {}
+    } else if (input.control && input.key === '2') {
+      try { contents.hostWebContents && contents.hostWebContents.send('hotkey', 'expand1'); } catch {}
     }
   });
 });
@@ -146,6 +158,7 @@ app.whenReady().then(() => {
     if (input.key === '1') win.webContents.send('hotkey', 'expand0');
     else if (input.key === '2') win.webContents.send('hotkey', 'expand1');
     else if (input.key.toLowerCase() === 'h') win.webContents.send('hotkey', 'toggleUI');
+    else if (input.key.toLowerCase() === 'b') win.webContents.send('hotkey', 'toggleServerBtn');
   });
 
   app.on('second-instance', () => { win.show(); win.focus(); });
