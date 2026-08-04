@@ -42,3 +42,6 @@ tipo "Entrar"/"Login" e clica sozinho. Se a tela de login do Pokepixel Idle for 
 - `main.js` — processo principal do Electron (janela, contas criptografadas, atalhos, notificação).
 - `preload.js` — ponte seguríssima entre `main.js` e a interface (`index.html`).
 - `index.html` — a interface: os 2 painéis, o modal de contas e o log de shiny.
+
+
+Agradecimentos ao #soufoka que criou o PokeGrid, usei ele como base para criar esse
