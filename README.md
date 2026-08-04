@@ -83,6 +83,13 @@ O launcher já limpa a tela do jogo sozinho, sem precisar fazer nada:
 Tudo isso é feito só visualmente (mesma lógica de um bloqueador de anúncio, sem clicar em nada
 sozinho) e continua escondido mesmo se o jogo recriar o elemento depois.
 
+### 🧲 Barra de ícones do jogo, arrastável e redimensionável
+A barra de ícones do topo do jogo (Inventário, Caçadas, Social, etc.) vem presa no site por
+padrão. O launcher libera ela: segure **Alt e arraste** pra mover pra qualquer lugar da tela, ou
+**Alt + roda do mouse** pra aumentar/diminuir o tamanho dela. Sem o Alt, os botões continuam
+funcionando normalmente. A posição e o tamanho escolhidos ficam salvos por conta, então não
+precisa reajustar toda vez que abrir o jogo.
+
 ### ☕ Doação via Pix
 Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
 projeto.
@@ -135,6 +142,11 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 ---
 
 ## 🧭 Histórico de mudanças
+
+### v1.0.4
+- Barra de ícones do jogo agora pode ser arrastada (`Alt` + arrastar) e redimensionada
+  (`Alt` + roda do mouse) pra qualquer lugar da tela, sem afetar os cliques normais nos botões.
+  Posição e tamanho ficam salvos por conta.
 
 ### v1.0.3
 - Corrigido: `Ctrl+1` / `Ctrl+2` não funcionavam com o foco dentro de um painel (só funcionavam
