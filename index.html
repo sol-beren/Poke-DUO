@@ -107,7 +107,7 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO <small id="versao">v1.0.6</small></h1>
+    <h1>✨ Poke DUO <small id="versao">v1.0.7</small></h1>
     <button id="btnContas">👤 Contas</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
@@ -232,6 +232,9 @@ function criarWebview(i) {
     tentarBarraArrastavel(i);
     tentarBarraAcaoMapa(i);
     tentarEstilizarHudMina(i);
+    tentarAtalhoAnalisadorCacada(i);
+    tentarAtalhoRegistroCaptura(i);
+    tentarMoverPacoteMenuEventos(i);
     aplicarZoom(i);
   });
   wv.addEventListener('did-navigate', () => {
@@ -248,6 +251,9 @@ function criarWebview(i) {
     tentarBarraArrastavel(i);
     tentarBarraAcaoMapa(i);
     tentarEstilizarHudMina(i);
+    tentarAtalhoAnalisadorCacada(i);
+    tentarAtalhoRegistroCaptura(i);
+    tentarMoverPacoteMenuEventos(i);
   });
   return wv;
 }
@@ -509,7 +515,7 @@ function scriptElementoMovel(seletor, chaveStorage) {
         } catch {}
       }
 
-      let arrastando = false, offX = 0, offY = 0;
+      let arrastando = false, moveu = false, offX = 0, offY = 0;
       el.addEventListener('mousedown', (e) => {
         if (!e.altKey) return;
         e.preventDefault();
@@ -518,18 +524,30 @@ function scriptElementoMovel(seletor, chaveStorage) {
         // desde o último ajuste, e sem isso o clique passa a "errar" o canto
         el.style.setProperty('transform', 'scale(' + escala + ')', 'important');
         arrastando = true;
+        moveu = false;
         const r = el.getBoundingClientRect();
         offX = e.clientX - r.left;
         offY = e.clientY - r.top;
       });
       window.addEventListener('mousemove', (e) => {
         if (!arrastando) return;
+        moveu = true;
         el.style.setProperty('left', (e.clientX - offX) + 'px', 'important');
         el.style.setProperty('top', (e.clientY - offY) + 'px', 'important');
         el.style.setProperty('right', 'auto', 'important');
         el.style.setProperty('bottom', 'auto', 'important');
       });
       window.addEventListener('mouseup', () => { if (arrastando) { arrastando = false; salvar(); } });
+
+      // solta o mouse depois de arrastar = o navegador dispara um "click" em cima
+      // do que quer que esteja embaixo do cursor (um botão do menu, por exemplo),
+      // e o jogo entende como um clique normal, abrindo o menu daquele botão.
+      // Intercepta em fase de captura (antes do botão receber) e cancela, mas só
+      // quando o mouse realmente se moveu - um Alt+clique sem mover continua
+      // funcionando normal.
+      el.addEventListener('click', (e) => {
+        if (moveu) { e.preventDefault(); e.stopPropagation(); moveu = false; }
+      }, true);
 
       el.addEventListener('wheel', (e) => {
         if (!e.altKey) return;
@@ -583,6 +601,174 @@ function scriptEstilizarHudMina() {
 }
 function tentarEstilizarHudMina(i) {
   webviews[i].executeJavaScript(scriptEstilizarHudMina()).catch(() => {});
+}
+
+// ---------- atalho do "Analisador de Caçada" direto na barra de topo ----------
+// Esse botão normalmente só aparece dentro do dropdown de Automação (precisa
+// abrir o menu, depois clicar nele). Aqui a gente cria uma cópia dele direto na
+// barra, do lado do Configurações, pra ficar 1 clique só. O item original de
+// dentro do dropdown fica escondido (display: none) - continua existindo no
+// DOM (é ele que a gente "aperta" por trás ao clicar na cópia), só não aparece
+// mais duplicado ali dentro. MutationObserver de novo, pro caso do jogo recriar
+// a barra ou o dropdown do zero.
+function scriptAtalhoAnalisadorCacada() {
+  return `(function(){
+    document.getElementById('pp-btn-analisador')?.remove();
+    if (window.__ppAnalisadorObs) { window.__ppAnalisadorObs.disconnect(); window.__ppAnalisadorObs = null; }
+    function setup() {
+      const barra = document.querySelector('.pokeidle-top-toolbar');
+      const configBtn = barra && barra.querySelector('.pokeidle-top-toolbar__btn[data-menu-id="settings"]');
+      const original = document.querySelector('[data-menu-id="hunt-analyzer"]');
+      if (!barra || !configBtn || !original) return;
+      original.style.setProperty('display', 'none', 'important');
+      let btn = document.getElementById('pp-btn-analisador');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'pp-btn-analisador';
+        btn.className = 'pokeidle-top-toolbar__btn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Analisador de Caçada');
+        const label = document.createElement('span');
+        label.className = 'pokeidle-top-toolbar__label';
+        label.textContent = 'Caçada';
+        btn.appendChild(label);
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelector('[data-menu-id="hunt-analyzer"]')?.click();
+        });
+        configBtn.insertAdjacentElement('beforebegin', btn);
+      }
+      // tenta sincronizar o ícone toda vez, até o original realmente ter a <img>
+      const iconOriginal = original.querySelector('img');
+      if (iconOriginal) {
+        let img = btn.querySelector('img');
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'pokeidle-top-toolbar__icon';
+          img.alt = 'Analisador de Caçada';
+          img.draggable = false;
+          btn.insertBefore(img, btn.firstChild);
+        }
+        if (img.src !== iconOriginal.src) img.src = iconOriginal.src;
+      }
+    }
+    setup();
+    const obs = new MutationObserver(setup);
+    obs.observe(document.body, { childList: true, subtree: true });
+    window.__ppAnalisadorObs = obs;
+  })();`;
+}
+function tentarAtalhoAnalisadorCacada(i) {
+  webviews[i].executeJavaScript(scriptAtalhoAnalisadorCacada()).catch(() => {});
+}
+
+// ---------- atalho do "Registro de Captura" direto na barra de topo ----------
+// Mesma ideia do atalho do Analisador de Caçada acima: cria uma cópia do botão
+// direto na barra (do lado do Configurações) e esconde o item original de
+// dentro do dropdown, pra não ficar duplicado.
+function scriptAtalhoRegistroCaptura() {
+  return `(function(){
+    document.getElementById('pp-btn-captura')?.remove();
+    if (window.__ppCapturaObs) { window.__ppCapturaObs.disconnect(); window.__ppCapturaObs = null; }
+    function setup() {
+      const barra = document.querySelector('.pokeidle-top-toolbar');
+      const configBtn = barra && barra.querySelector('.pokeidle-top-toolbar__btn[data-menu-id="settings"]');
+      const original = document.querySelector('[data-menu-id="capture-records"]');
+      if (!barra || !configBtn || !original) return;
+      original.style.setProperty('display', 'none', 'important');
+      let btn = document.getElementById('pp-btn-captura');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'pp-btn-captura';
+        btn.className = 'pokeidle-top-toolbar__btn';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', 'Registro de Captura');
+        const label = document.createElement('span');
+        label.className = 'pokeidle-top-toolbar__label';
+        label.textContent = 'Captura';
+        btn.appendChild(label);
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelector('[data-menu-id="capture-records"]')?.click();
+        });
+        configBtn.insertAdjacentElement('beforebegin', btn);
+      }
+      const iconOriginal = original.querySelector('img');
+      if (iconOriginal) {
+        let img = btn.querySelector('img');
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'pokeidle-top-toolbar__icon';
+          img.alt = 'Registro de Captura';
+          img.draggable = false;
+          btn.insertBefore(img, btn.firstChild);
+        }
+        if (img.src !== iconOriginal.src) img.src = iconOriginal.src;
+      }
+    }
+    setup();
+    const obs = new MutationObserver(setup);
+    obs.observe(document.body, { childList: true, subtree: true });
+    window.__ppCapturaObs = obs;
+  })();`;
+}
+function tentarAtalhoRegistroCaptura(i) {
+  webviews[i].executeJavaScript(scriptAtalhoRegistroCaptura()).catch(() => {});
+}
+
+// ---------- move o botão "Pacote" pra dentro do submenu de Eventos ----------
+// Diferente dos atalhos acima (que criam uma cópia na barra e escondem o
+// original), aqui é o contrário: o "Pacote" já mora direto na barra de topo e
+// a ideia é jogar ele pra dentro do dropdown de Eventos, junto com PvP
+// Ranqueado e Maestria. Como é o próprio elemento original sendo movido (não
+// uma cópia), ele já leva junto o ícone, o texto e o clique nativo do jogo -
+// só troca a classe pra ficar com a cara dos outros itens do dropdown.
+// Não temos o id exato do dropdown de Eventos (o jogo pode variar isso entre
+// versões), então a busca tenta primeiro o id no mesmo padrão usado pelo
+// dropdown do Jogador e, se não achar, cai pra um fallback que localiza o
+// dropdown pelo conteúdo (procura o item que já tem "Ranqueado"/"Maestria").
+function scriptMoverPacoteMenuEventos() {
+  return `(function(){
+    function encontrarDropdownEventos() {
+      const porId = document.querySelector('#pokeidle-toolbar-menu-events');
+      if (porId) return porId;
+      const candidatos = document.querySelectorAll('[id^="pokeidle-toolbar-menu-"]');
+      for (const c of candidatos) {
+        const texto = c.textContent || '';
+        if (texto.includes('Ranqueado') || texto.includes('Maestria')) return c;
+      }
+      return null;
+    }
+    function setup() {
+      const pacote = document.querySelector('[data-menu-id="beta-goals"]');
+      const dropdown = encontrarDropdownEventos();
+      if (!pacote || !dropdown) return;
+      if (pacote.parentElement === dropdown) return; // já foi movido
+
+      pacote.classList.remove('pokeidle-top-toolbar__btn');
+      pacote.classList.add('pokeidle-top-toolbar__dropdown-btn');
+      dropdown.appendChild(pacote);
+
+      // evita o borrão: o ícone foi feito pro tamanho pequeno da barra de
+      // topo, e ao entrar no dropdown ele é exibido maior - sem isso o
+      // navegador faz um upscale suavizado (borrado). "pixelated" mantém as
+      // bordas nítidas, o que combina com o estilo pixel art do jogo.
+      const img = pacote.querySelector('img');
+      if (img) {
+        img.style.setProperty('image-rendering', 'pixelated', 'important');
+        img.style.setProperty('image-rendering', 'crisp-edges', 'important');
+      }
+    }
+    setup();
+    if (!window.__ppPacoteObs) {
+      const obs = new MutationObserver(setup);
+      obs.observe(document.body, { childList: true, subtree: true });
+      window.__ppPacoteObs = obs;
+    }
+  })();`;
+}
+function tentarMoverPacoteMenuEventos(i) {
+  webviews[i].executeJavaScript(scriptMoverPacoteMenuEventos()).catch(() => {});
 }
 
 // ---------- modal de contas ----------

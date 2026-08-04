@@ -1,7 +1,7 @@
 {
   "name": "pokepixel-duo",
   "productName": "Poke DUO",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Roda 2 contas de Pokepixel Idle ao mesmo tempo, cada uma em seu proprio perfil de navegador",
   "main": "main.js",
   "author": "voce",

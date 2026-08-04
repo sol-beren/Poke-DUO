@@ -4,7 +4,7 @@
 
 Cada conta roda no seu próprio perfil de navegador, completamente isolado (o Electron separa por `partition`), então cookies, sessão e login de uma conta nunca se misturam com os da outra. Feito pra quem joga com 2 contas em paralelo e cansou de precisar de duas janelas de navegador espalhadas pela tela, logando manualmente em cada uma toda vez.
 
-![status](https://img.shields.io/badge/vers%C3%A3o-1.0.6-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
+![status](https://img.shields.io/badge/vers%C3%A3o-1.0.7-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
 
 ---
 
@@ -150,6 +150,17 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 ---
 
 ## 🧭 Histórico de mudanças
+
+### v1.0.7
+- Adicionado atalho do **Analisador de Caçada** direto na barra de topo (antes só dava pra
+  acessar abrindo o dropdown de Automação) — 1 clique só, do lado do botão Configurações.
+- Adicionado atalho do **Registro de Captura** direto na barra de topo, do mesmo jeito.
+- O botão **Pacote**, que antes ficava solto na barra de topo, agora foi movido pra dentro do
+  dropdown de Eventos, junto com PvP Ranqueado e Maestria.
+- Corrigido: ao arrastar (Alt + arrastar) a barra de ícones ou a barra de ações do mapa e soltar
+  o botão do mouse em cima de algum botão do jogo, esse clique era repassado sem querer pro jogo
+  e abria o menu daquele botão — agora só volta a valer o clique normal se o mouse não tiver se
+  movido durante o Alt+clique.
 
 ### v1.0.6
 - Corrigido: arrastar a barra de ícones/ações do mapa às vezes "errava" o canto de novo depois
