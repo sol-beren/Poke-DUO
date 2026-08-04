@@ -107,7 +107,7 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO <small id="versao">v1.0.4</small></h1>
+    <h1>✨ Poke DUO <small id="versao">v1.0.6</small></h1>
     <button id="btnContas">👤 Contas</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
@@ -230,6 +230,8 @@ function criarWebview(i) {
     tentarOcultarBanner(i);
     tentarServerBtn(i);
     tentarBarraArrastavel(i);
+    tentarBarraAcaoMapa(i);
+    tentarEstilizarHudMina(i);
     aplicarZoom(i);
   });
   wv.addEventListener('did-navigate', () => {
@@ -244,6 +246,8 @@ function criarWebview(i) {
     tentarOcultarBanner(i);
     tentarServerBtn(i);
     tentarBarraArrastavel(i);
+    tentarBarraAcaoMapa(i);
+    tentarEstilizarHudMina(i);
   });
   return wv;
 }
@@ -461,85 +465,124 @@ function alternarServerBtn() {
   webviews.forEach((_wv, i) => tentarServerBtn(i));
 }
 
-// ---------- barra de ícones do jogo arrastável e redimensionável ----------
-// A barra (.pokeidle-top-toolbar) vem presa no site. Aqui a gente vira ela
-// "position: fixed" e adiciona: Alt+arrastar = mover, Alt+roda do mouse =
-// aumentar/diminuir (via transform: scale, pra não desmontar o layout interno
-// dos ícones). Sem Alt, os botões continuam funcionando normal. Posição e
-// tamanho ficam salvos no localStorage do próprio jogo (por conta), então não
-// precisa reajustar toda vez que abrir. MutationObserver de novo, pro caso do
-// jogo recriar essa barra em outra tela.
-function scriptBarraArrastavel() {
+// ---------- elementos do jogo arrastáveis e redimensionáveis ----------
+// Função genérica: transforma qualquer elemento do jogo em "position: fixed",
+// com Alt+arrastar = mover, Alt+roda do mouse = aumentar/diminuir (via
+// transform: scale, pra não desmontar o layout interno dos botões). Sem Alt,
+// os cliques continuam funcionando normal. Posição e tamanho ficam salvos no
+// localStorage do próprio jogo (por conta, numa chave própria pra cada
+// elemento), então não precisa reajustar toda vez que abrir. MutationObserver
+// de novo, pro caso do jogo recriar o elemento em outra tela.
+function scriptElementoMovel(seletor, chaveStorage) {
   return `(function(){
     function setup() {
-      const barra = document.querySelector('.pokeidle-top-toolbar');
-      if (!barra || barra.__ppArrastavel) return;
-      barra.__ppArrastavel = true;
+      const el = document.querySelector(${JSON.stringify(seletor)});
+      if (!el || el.__ppMovel) return;
+      el.__ppMovel = true;
 
-      barra.style.setProperty('position', 'fixed', 'important');
-      barra.style.setProperty('z-index', '99999', 'important');
-      barra.style.setProperty('margin', '0', 'important');
-      barra.style.setProperty('transform-origin', 'top left', 'important');
+      el.style.setProperty('position', 'fixed', 'important');
+      el.style.setProperty('z-index', '99999', 'important');
+      el.style.setProperty('margin', '0', 'important');
+      el.style.setProperty('transform-origin', 'top left', 'important');
 
+      const chave = ${JSON.stringify(chaveStorage)};
       let pos = null;
-      try { pos = JSON.parse(localStorage.getItem('pp_barra_pos') || 'null'); } catch {}
+      try { pos = JSON.parse(localStorage.getItem(chave) || 'null'); } catch {}
       let escala = (pos && pos.escala) || 1;
-      barra.style.setProperty('transform', 'scale(' + escala + ')', 'important');
+      el.style.setProperty('transform', 'scale(' + escala + ')', 'important');
       if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
-        barra.style.setProperty('left', pos.left + 'px', 'important');
-        barra.style.setProperty('top', pos.top + 'px', 'important');
-        barra.style.setProperty('right', 'auto', 'important');
-        barra.style.setProperty('bottom', 'auto', 'important');
+        el.style.setProperty('left', pos.left + 'px', 'important');
+        el.style.setProperty('top', pos.top + 'px', 'important');
+        el.style.setProperty('right', 'auto', 'important');
+        el.style.setProperty('bottom', 'auto', 'important');
       }
 
       function salvar() {
-        const leftAtual = parseFloat(barra.style.left);
-        const topAtual = parseFloat(barra.style.top);
+        const leftAtual = parseFloat(el.style.left);
+        const topAtual = parseFloat(el.style.top);
         try {
-          localStorage.setItem('pp_barra_pos', JSON.stringify({
-            left: isNaN(leftAtual) ? barra.getBoundingClientRect().left : leftAtual,
-            top: isNaN(topAtual) ? barra.getBoundingClientRect().top : topAtual,
+          localStorage.setItem(chave, JSON.stringify({
+            left: isNaN(leftAtual) ? el.getBoundingClientRect().left : leftAtual,
+            top: isNaN(topAtual) ? el.getBoundingClientRect().top : topAtual,
             escala: escala
           }));
         } catch {}
       }
 
       let arrastando = false, offX = 0, offY = 0;
-      barra.addEventListener('mousedown', (e) => {
+      el.addEventListener('mousedown', (e) => {
         if (!e.altKey) return;
         e.preventDefault();
+        // reforça o transform ANTES de medir a posição: o jogo pode ter
+        // sobrescrito ele por conta própria (ex: transform de centralização)
+        // desde o último ajuste, e sem isso o clique passa a "errar" o canto
+        el.style.setProperty('transform', 'scale(' + escala + ')', 'important');
         arrastando = true;
-        const r = barra.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
         offX = e.clientX - r.left;
         offY = e.clientY - r.top;
       });
       window.addEventListener('mousemove', (e) => {
         if (!arrastando) return;
-        barra.style.setProperty('left', (e.clientX - offX) + 'px', 'important');
-        barra.style.setProperty('top', (e.clientY - offY) + 'px', 'important');
-        barra.style.setProperty('right', 'auto', 'important');
-        barra.style.setProperty('bottom', 'auto', 'important');
+        el.style.setProperty('left', (e.clientX - offX) + 'px', 'important');
+        el.style.setProperty('top', (e.clientY - offY) + 'px', 'important');
+        el.style.setProperty('right', 'auto', 'important');
+        el.style.setProperty('bottom', 'auto', 'important');
       });
       window.addEventListener('mouseup', () => { if (arrastando) { arrastando = false; salvar(); } });
 
-      barra.addEventListener('wheel', (e) => {
+      el.addEventListener('wheel', (e) => {
         if (!e.altKey) return;
         e.preventDefault();
         escala += (e.deltaY < 0 ? 0.05 : -0.05);
         escala = Math.max(0.5, Math.min(2.5, escala));
-        barra.style.setProperty('transform', 'scale(' + escala + ')', 'important');
+        el.style.setProperty('transform', 'scale(' + escala + ')', 'important');
         salvar();
       }, { passive: false });
     }
     setup();
-    if (!window.__ppBarraObs) {
-      window.__ppBarraObs = new MutationObserver(setup);
-      window.__ppBarraObs.observe(document.body, { childList: true, subtree: true });
+    if (!window.__ppMovelObs) window.__ppMovelObs = {};
+    if (!window.__ppMovelObs[${JSON.stringify(chaveStorage)}]) {
+      const obs = new MutationObserver(setup);
+      obs.observe(document.body, { childList: true, subtree: true });
+      window.__ppMovelObs[${JSON.stringify(chaveStorage)}] = obs;
     }
   })();`;
 }
 function tentarBarraArrastavel(i) {
-  webviews[i].executeJavaScript(scriptBarraArrastavel()).catch(() => {});
+  webviews[i].executeJavaScript(scriptElementoMovel('.pokeidle-top-toolbar', 'pp_barra_pos')).catch(() => {});
+}
+function tentarBarraAcaoMapa(i) {
+  webviews[i].executeJavaScript(scriptElementoMovel('.pokeidle-map-action-bar', 'pp_actionbar_pos')).catch(() => {});
+}
+
+// ---------- reskin do painel "MINA POKÉMON" (profession-map-hud) ----------
+// O botão CIDADE (o não-primário) vira um quadradinho de ícone de casa,
+// jogado pra antes do GERENCIAR na mesma linha (via "order"), sem posicionamento
+// absoluto - fica coladinho do lado, do jeitinho que ficou bom. É só CSS
+// (::before pro icone, sem tocar no texto original do botão), injetado como
+// uma <style> global uma única vez - não precisa de MutationObserver porque
+// a regra continua valendo mesmo se o jogo recriar o painel do zero.
+function scriptEstilizarHudMina() {
+  return `(function(){
+    document.getElementById('pp-estilo-hud-mina')?.remove();
+    const s = document.createElement('style');
+    s.id = 'pp-estilo-hud-mina';
+    s.textContent = [
+      '.profession-map-hud .pokeidle-btn:not(.pokeidle-btn--primary) {',
+      '  order: -1 !important; width: 26px !important; height: 26px !important; min-width: 26px !important;',
+      '  padding: 0 !important; margin: 0 10px 0 0 !important; border-radius: 6px !important;',
+      '  font-size: 0 !important; color: transparent !important; background: #37415c !important;',
+      '  border-color: #37415c !important; display: inline-flex !important; align-items: center !important;',
+      '  justify-content: center !important;',
+      '}',
+      '.profession-map-hud .pokeidle-btn:not(.pokeidle-btn--primary)::before { content: "🏠"; font-size: 13px; color: #ffffff; }'
+    ].join('\\n');
+    document.head.appendChild(s);
+  })();`;
+}
+function tentarEstilizarHudMina(i) {
+  webviews[i].executeJavaScript(scriptEstilizarHudMina()).catch(() => {});
 }
 
 // ---------- modal de contas ----------

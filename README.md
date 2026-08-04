@@ -4,7 +4,7 @@
 
 Cada conta roda no seu próprio perfil de navegador, completamente isolado (o Electron separa por `partition`), então cookies, sessão e login de uma conta nunca se misturam com os da outra. Feito pra quem joga com 2 contas em paralelo e cansou de precisar de duas janelas de navegador espalhadas pela tela, logando manualmente em cada uma toda vez.
 
-![status](https://img.shields.io/badge/vers%C3%A3o-1.0.3-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
+![status](https://img.shields.io/badge/vers%C3%A3o-1.0.6-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
 
 ---
 
@@ -29,6 +29,7 @@ Precisa do [Node.js](https://nodejs.org) instalado (versão LTS).
   instala tudo sozinho (aparece uma janelinha preta só nessa primeira vez) e depois abre o app
   sem nenhuma janela de terminal. Dica: clique direito nesse arquivo → **Enviar para** → **Área
   de trabalho (criar atalho)** pra deixar um atalho fixo.
+- **Via terminal (qualquer sistema):** `npm install` uma vez, depois `npm start` pra abrir.
 
 ---
 
@@ -83,12 +84,23 @@ O launcher já limpa a tela do jogo sozinho, sem precisar fazer nada:
 Tudo isso é feito só visualmente (mesma lógica de um bloqueador de anúncio, sem clicar em nada
 sozinho) e continua escondido mesmo se o jogo recriar o elemento depois.
 
-### 🧲 Barra de ícones do jogo, arrastável e redimensionável
-A barra de ícones do topo do jogo (Inventário, Caçadas, Social, etc.) vem presa no site por
-padrão. O launcher libera ela: segure **Alt e arraste** pra mover pra qualquer lugar da tela, ou
-**Alt + roda do mouse** pra aumentar/diminuir o tamanho dela. Sem o Alt, os botões continuam
-funcionando normalmente. A posição e o tamanho escolhidos ficam salvos por conta, então não
-precisa reajustar toda vez que abrir o jogo.
+### 🧲 Elementos do jogo arrastáveis e redimensionáveis
+Alguns elementos do jogo vêm presos no site por padrão. O launcher libera eles: segure **Alt e
+arraste** pra mover pra qualquer lugar da tela, ou **Alt + roda do mouse** pra aumentar/diminuir
+o tamanho. Sem o Alt, os cliques continuam funcionando normalmente. A posição e o tamanho
+escolhidos ficam salvos por conta, então não precisa reajustar toda vez que abrir o jogo.
+Elementos liberados até agora:
+- Barra de ícones do topo (Inventário, Caçadas, Social, etc.).
+- Barra de ações do mapa ("Voltar à cidade" / "Capturar").
+
+### 🎨 Painel "Mina Pokémon" com visual próprio
+O painel de gerenciar a mina (que mostra os Pokémon trabalhando) ganhou um reskin: o botão
+**CIDADE** virou um quadradinho com ícone de casinha 🏠, posicionado logo antes do botão
+**GERENCIAR** na mesma linha (sem ficar espalhado pelos cantos do painel).
+
+### ☕ Doação via Pix
+Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
+projeto.
 
 ### 🪟 Janela sem moldura do Windows
 A janela não usa mais a barra de título nativa do Windows — a própria barra de cima do app faz
@@ -107,10 +119,6 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
   tempinho.
 - Nenhuma permissão de câmera, microfone, localização ou notificação do site é concedida
   automaticamente.
-
-  ### ☕ Doação via Pix
-Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
-projeto.
 
 ---
 
@@ -143,6 +151,18 @@ projeto.
 
 ## 🧭 Histórico de mudanças
 
+### v1.0.6
+- Corrigido: arrastar a barra de ícones/ações do mapa às vezes "errava" o canto de novo depois
+  de um tempo (o jogo reaplicava um transform próprio por cima do nosso) — agora o ajuste é
+  reforçado a cada clique de arrastar.
+- Painel "Mina Pokémon" com reskin: botão CIDADE virou um ícone de casinha, encaixado logo antes
+  do botão GERENCIAR na mesma linha.
+
+### v1.0.5
+- Barra de ações do mapa ("Voltar à cidade" / "Capturar") também ficou arrastável e
+  redimensionável (mesma técnica da barra de ícones: `Alt` + arrastar / `Alt` + roda do mouse),
+  com posição e tamanho salvos por conta.
+
 ### v1.0.4
 - Barra de ícones do jogo agora pode ser arrastada (`Alt` + arrastar) e redimensionada
   (`Alt` + roda do mouse) pra qualquer lugar da tela, sem afetar os cliques normais nos botões.
@@ -170,6 +190,11 @@ projeto.
   login automático, zoom por painel, tela cheia por conta (`Ctrl+1`/`Ctrl+2`), modo tela cheia do
   launcher (`Ctrl+H`), esconder banner/Discord do jogo automaticamente, botão de doação via Pix.
 
+> A notificação de shiny foi removida por enquanto (o detector genérico estava disparando falso
+> positivo com nick de jogador na tela/chat). Quando quiser reativar, avise como o jogo indica um
+> shiny de verdade (mensagem de rede, elemento que aparece na tela, etc.) pra fazer a detecção
+> certa, sem gatilho por palavra solta.
+
 ---
 
 ## 🔧 Ajuste fino do login automático
@@ -196,4 +221,4 @@ de e-mail ou senha → **Inspecionar**, e envie o trecho do HTML pra o script se
 ## 💜 Agradecimentos
 
 Um obrigado especial ao **SOUFOKA**, cujo projeto **PokeGrid** foi a base usada pra construir esse
-launcher.
+launcher. Sem esse ponto de partida, o Poke DUO não existiria — valeu por compartilhar o trabalho!
