@@ -8,8 +8,7 @@ cookies/localStorage/sessão de cada conta ficam totalmente separados).
 
 Precisa do [Node.js](https://nodejs.org) instalado.
 
-- Windows: dá dois cliques em `iniciar.bat` (na primeira vez ele instala tudo sozinho).
-- Terminal: `npm install` e depois `npm start`.
+- Windows: dá dois cliques em `Abrir PokeDuo.vbs` (na primeira vez ele instala tudo sozinho).
 
 ## O que já funciona
 
