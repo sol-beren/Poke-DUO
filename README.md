@@ -14,6 +14,7 @@ Precisa do [Node.js](https://nodejs.org) instalado.
 ## O que já funciona
 
 - Tela dividida em 2, uma conta em cada metade, cada uma em perfil separado.
+- Botão direito dentro do jogo maximiza o painel clicado (clica de novo pra voltar a dividir).
 - `Ctrl+1` alterna tela cheia da conta 1, `Ctrl+2` da conta 2.
 - Botão **👤 Contas**: guarda e-mail/senha das duas contas (criptografado no disco, só o seu
   Windows/keychain consegue ler) e liga o login automático por conta.
@@ -42,6 +43,3 @@ tipo "Entrar"/"Login" e clica sozinho. Se a tela de login do Pokepixel Idle for 
 - `main.js` — processo principal do Electron (janela, contas criptografadas, atalhos, notificação).
 - `preload.js` — ponte seguríssima entre `main.js` e a interface (`index.html`).
 - `index.html` — a interface: os 2 painéis, o modal de contas e o log de shiny.
-
-
-Agradecimentos ao #soufoka que criou o PokeGrid, usei ele como base para criar esse

@@ -91,6 +91,17 @@ ipcMain.handle('clipboard:copy', (_e, texto) => {
   try { clipboard.writeText(String(texto)); return true; } catch { return false; }
 });
 
+// Botoes da barra de titulo customizada (a janela e' sem moldura nativa - "frame: false")
+ipcMain.handle('win:minimize', (e) => { try { BrowserWindow.fromWebContents(e.sender)?.minimize(); } catch {} });
+ipcMain.handle('win:maximize-toggle', (e) => {
+  try {
+    const w = BrowserWindow.fromWebContents(e.sender);
+    if (!w) return;
+    if (w.isMaximized()) w.unmaximize(); else w.maximize();
+  } catch {}
+});
+ipcMain.handle('win:close', (e) => { try { BrowserWindow.fromWebContents(e.sender)?.close(); } catch {} });
+
 app.whenReady().then(() => {
   try { app.setAppUserModelId('online.nietore.pokepixelduo'); } catch {}
 
@@ -103,11 +114,18 @@ app.whenReady().then(() => {
     width: 1600,
     height: 900,
     show: false,
+    frame: false, // sem moldura nativa do Windows: a topbar do app vira a barra de titulo (arrastavel),
+                   // com botoes proprios de minimizar/maximizar/fechar. Isso tira de vez aquela faixa
+                   // cinza do SO que sobrava no topo mesmo com o autoHideMenuBar.
     autoHideMenuBar: true,
     backgroundColor: '#0d1117',
     webPreferences: { webviewTag: true, preload: path.join(__dirname, 'preload.js') }
   });
   win.loadFile(path.join(__dirname, 'index.html'));
+
+  // avisa a interface quando o estado maximizado muda (pra trocar o icone do botao)
+  win.on('maximize', () => win.webContents.send('hotkey', 'winMaximized'));
+  win.on('unmaximize', () => win.webContents.send('hotkey', 'winRestored'));
 
   // a janela principal so mostra o index.html: bloqueia navegacao dela
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file://')) { e.preventDefault(); abreFora(url); } });

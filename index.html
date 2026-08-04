@@ -8,11 +8,19 @@
   html, body { margin: 0; height: 100%; background: #0d1117; color: #e6edf3; font-family: system-ui, Segoe UI, Arial, sans-serif; overflow: hidden; }
   body { display: flex; flex-direction: column; }
 
-  #topbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #161b22; border-bottom: 1px solid #30363d; flex: none; }
+  /* Janela sem moldura nativa (frame:false): a topbar vira a barra de titulo,
+     arrastavel (-webkit-app-region: drag). Botoes e outros controles precisam
+     de "no-drag" pra continuarem clicaveis normalmente. */
+  #topbar { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #161b22; border-bottom: 1px solid #30363d; flex: none; -webkit-app-region: drag; }
   #topbar h1 { font-size: 12px; margin: 0 6px 0 0; color: #adbac7; font-weight: 700; }
-  #topbar button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+  #topbar button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; -webkit-app-region: no-drag; }
   #topbar button:hover { border-color: #58a6ff; }
   #topbar .hint { margin-left: auto; font-size: 10px; color: #6e7681; }
+
+  #winCtrls { display: flex; align-items: center; gap: 2px; margin-left: 10px; flex: none; -webkit-app-region: no-drag; }
+  #winCtrls button { background: transparent; border: none; border-radius: 4px; color: #adbac7; width: 30px; height: 24px; padding: 0; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  #winCtrls button:hover { background: #30363d; }
+  #winCtrls #btnWinFechar:hover { background: #da3633; color: #fff; }
 
   #grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; min-height: 0; position: relative; }
   .panel { position: relative; display: flex; flex-direction: column; background: #010409; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; min-height: 0; }
@@ -95,8 +103,13 @@
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
     <button id="btnDoar" title="Curtiu o launcher? Considere apoiar :)">☕ Doar um café</button>
-    <button id="btnOcultarUI" title="Esconder a interface e deixar só os jogos (Ctrl+H pra trazer de volta)">🙈</button>
-    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = esconder interface · ESC = voltar à divisão</span>
+    <button id="btnOcultarUI" title="Modo tela cheia: esconde toda a interface, só ficam os jogos (ESC ou Ctrl+H pra voltar)">🙈</button>
+    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = modo tela cheia · ESC = voltar</span>
+    <div id="winCtrls">
+      <button id="btnWinMin" title="Minimizar">─</button>
+      <button id="btnWinMax" title="Maximizar/Restaurar">▢</button>
+      <button id="btnWinFechar" title="Fechar">✕</button>
+    </div>
   </div>
 
   <div id="grid">
@@ -252,9 +265,10 @@ document.querySelectorAll('.btnReload').forEach(b => b.onclick = () => {
   try { webviews[i].reload(); } catch {}
 });
 
-// ESC no teclado do host (fora do webview) também volta a divisão
+// ESC no teclado do host (fora do webview): sai do modo tela cheia (se estiver
+// ligado) e também volta a divisão dos painéis
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') voltarDivisao();
+  if (e.key === 'Escape') { sairModoLimpo(); voltarDivisao(); }
   // Ctrl+F5 com o foco fora do webview (ex: em cima de algum botão da barra):
   // recarrega os dois painéis ignorando cache. Dentro do webview quem cuida
   // disso é o main.js (o teclado fica preso lá dentro enquanto o jogo tem foco).
@@ -266,7 +280,7 @@ document.addEventListener('keydown', (e) => {
 
 // clique direito dentro do jogo, ESC dentro do jogo e os atalhos Ctrl+1/Ctrl+2 chegam por aqui (via main.js)
 window.ppAPI.onHotkey((k) => {
-  if (k === 'esc') voltarDivisao();
+  if (k === 'esc') { sairModoLimpo(); voltarDivisao(); }
   else if (k === 'toggleUI') toggleModoLimpo();
   else if (k.startsWith('expand')) toggleExpand(+k.slice(6));
   else if (k.startsWith('ctx')) {
@@ -274,6 +288,8 @@ window.ppAPI.onHotkey((k) => {
     const i = contentsIdParaIndex[contentsId];
     if (i !== undefined) toggleExpand(i);
   }
+  else if (k === 'winMaximized') atualizarIconeMax(true);
+  else if (k === 'winRestored') atualizarIconeMax(false);
 });
 
 // ---------- login automático ----------
@@ -422,11 +438,21 @@ document.getElementById('btnCopiarPix').onclick = async () => {
 document.getElementById('btnLoginAgora').onclick = () => { [0, 1].forEach(i => tentarLoginAutomatico(i)); };
 document.getElementById('btnRecarregar').onclick = () => webviews.forEach(w => w.reload());
 
-// Modo limpo: esconde topbar + cabeçalho das contas, so sobra o jogo (a janela
-// ja fica maximizada por baixo, entao a barra de tarefas do Windows continua
-// aparecendo). Ctrl+H (atalho global, tratado no main.js) alterna de volta.
+// Modo tela cheia (modo limpo): esconde a topbar (que agora tambem e' a barra
+// de titulo, ja que a janela nao tem moldura nativa) + cabeçalho das contas,
+// so sobra o jogo. A janela continua so maximizada (nao fullscreen real), entao
+// a barra de tarefas do Windows nunca some. Ctrl+H ou ESC alternam de volta.
 function toggleModoLimpo() { document.body.classList.toggle('modo-limpo'); }
+function sairModoLimpo() { document.body.classList.remove('modo-limpo'); }
 document.getElementById('btnOcultarUI').onclick = toggleModoLimpo;
+
+// ---------- botoes da barra de titulo (janela sem moldura nativa) ----------
+document.getElementById('btnWinMin').onclick = () => window.ppAPI.winMinimize();
+document.getElementById('btnWinMax').onclick = () => window.ppAPI.winMaximizeToggle();
+document.getElementById('btnWinFechar').onclick = () => window.ppAPI.winClose();
+function atualizarIconeMax(maximizada) {
+  document.getElementById('btnWinMax').textContent = maximizada ? '❐' : '▢';
+}
 
 // ---------- carrega contas salvas ----------
 (async () => {
