@@ -90,10 +90,6 @@ padrão. O launcher libera ela: segure **Alt e arraste** pra mover pra qualquer 
 funcionando normalmente. A posição e o tamanho escolhidos ficam salvos por conta, então não
 precisa reajustar toda vez que abrir o jogo.
 
-### ☕ Doação via Pix
-Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
-projeto.
-
 ### 🪟 Janela sem moldura do Windows
 A janela não usa mais a barra de título nativa do Windows — a própria barra de cima do app faz
 esse papel (dá pra arrastar a janela por ela, e dar 2 cliques pra maximizar/restaurar), com
@@ -111,6 +107,10 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
   tempinho.
 - Nenhuma permissão de câmera, microfone, localização ou notificação do site é concedida
   automaticamente.
+
+  ### ☕ Doação via Pix
+Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
+projeto.
 
 ---
 
