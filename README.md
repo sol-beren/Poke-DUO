@@ -170,11 +170,6 @@ projeto.
   login automático, zoom por painel, tela cheia por conta (`Ctrl+1`/`Ctrl+2`), modo tela cheia do
   launcher (`Ctrl+H`), esconder banner/Discord do jogo automaticamente, botão de doação via Pix.
 
-> A notificação de shiny foi removida por enquanto (o detector genérico estava disparando falso
-> positivo com nick de jogador na tela/chat). Quando quiser reativar, avise como o jogo indica um
-> shiny de verdade (mensagem de rede, elemento que aparece na tela, etc.) pra fazer a detecção
-> certa, sem gatilho por palavra solta.
-
 ---
 
 ## 🔧 Ajuste fino do login automático
