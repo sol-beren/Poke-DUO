@@ -17,6 +17,7 @@ Cada conta roda no seu próprio perfil de navegador, completamente isolado (o El
 - [Histórico de mudanças](#-histórico-de-mudanças)
 - [Ajuste fino do login automático](#-ajuste-fino-do-login-automático)
 - [Segurança e privacidade](#-segurança-e-privacidade)
+- [Agradecimentos](#-agradecimentos)
 
 ---
 
@@ -195,3 +196,10 @@ de e-mail ou senha → **Inspecionar**, e envie o trecho do HTML pra o script se
   do site.
 - Toda navegação que sai do domínio do jogo é bloqueada dentro do app e redirecionada pro
   navegador padrão do sistema.
+
+---
+
+## 💜 Agradecimentos
+
+Um obrigado especial ao **SOUFOKA**, cujo projeto **PokeGrid** foi a base usada pra construir esse
+launcher.
