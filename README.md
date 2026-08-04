@@ -29,7 +29,6 @@ Precisa do [Node.js](https://nodejs.org) instalado (versão LTS).
   instala tudo sozinho (aparece uma janelinha preta só nessa primeira vez) e depois abre o app
   sem nenhuma janela de terminal. Dica: clique direito nesse arquivo → **Enviar para** → **Área
   de trabalho (criar atalho)** pra deixar um atalho fixo.
-- **Via terminal (qualquer sistema):** `npm install` uma vez, depois `npm start` pra abrir.
 
 ---
 
