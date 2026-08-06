@@ -151,6 +151,12 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 
 ## 🧭 Histórico de mudanças
 
+### v1.0.8
+- Adicionado o botão **📜 Scripts**: um gerenciador de scripts estilo
+  Tampermonkey, direto no launcher. Cole o conteúdo de um `.user.js` (ou
+  importe o arquivo do disco), ligue/desligue cada script individualmente,
+  e ele roda nos dois painéis automaticamente sempre que a página carregar.
+
 ### v1.0.7
 - Adicionado atalho do **Analisador de Caçada** direto na barra de topo (antes só dava pra
   acessar abrindo o dropdown de Automação) — 1 clique só, do lado do botão Configurações.

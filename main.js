@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, safeStorage, Menu, shell, session, Notification, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, safeStorage, Menu, shell, session, Notification, clipboard, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -91,6 +91,40 @@ ipcMain.handle('creds:save', (_e, contas) => {
   fs.writeFileSync(f + '.tmp', data);
   fs.renameSync(f + '.tmp', f); // troca atomica: fechar o app no meio nao corrompe o arquivo
   return true;
+});
+
+// ===== Scripts estilo Tampermonkey (.user.js), guardados em texto simples em disco =====
+// Diferente das contas (email/senha), o conteudo aqui e' so codigo - nao precisa
+// de criptografia, so persistir entre aberturas do launcher.
+const scriptsFile = () => path.join(app.getPath('userData'), 'scripts.json');
+
+ipcMain.handle('scripts:load', () => {
+  try { return JSON.parse(fs.readFileSync(scriptsFile(), 'utf8')); } catch { return []; }
+});
+
+ipcMain.handle('scripts:save', (_e, scripts) => {
+  const f = scriptsFile();
+  fs.writeFileSync(f + '.tmp', JSON.stringify(scripts, null, 2));
+  fs.renameSync(f + '.tmp', f); // troca atomica, igual as contas
+  return true;
+});
+
+// Abre o seletor de arquivo nativo do Windows pra importar um .user.js do disco
+ipcMain.handle('scripts:importFile', async (e) => {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  const res = await dialog.showOpenDialog(win, {
+    title: 'Importar script (.user.js)',
+    filters: [{ name: 'Userscripts', extensions: ['user.js', 'js'] }, { name: 'Todos os arquivos', extensions: ['*'] }],
+    properties: ['openFile'],
+  });
+  if (res.canceled || !res.filePaths[0]) return null;
+  try {
+    const codigo = fs.readFileSync(res.filePaths[0], 'utf8');
+    const nomeArquivo = path.basename(res.filePaths[0]);
+    return { nomeArquivo, codigo };
+  } catch {
+    return null;
+  }
 });
 
 // Notificacao do sistema (usada pro aviso de shiny)

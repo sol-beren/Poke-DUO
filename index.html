@@ -86,6 +86,31 @@
   #modalContas .rodape button.primary { background: #238636; border-color: #2ea043; }
   #modalContas .rodape button:hover { filter: brightness(1.15); }
 
+  /* ===== modal de scripts (estilo Tampermonkey) ===== */
+  #modalScripts { position: fixed; inset: 0; background: #010409cc; display: none; align-items: center; justify-content: center; z-index: 55; }
+  #modalScripts.on { display: flex; }
+  #modalScripts .caixa { width: 620px; max-width: 94vw; max-height: 88vh; overflow-y: auto; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
+  #modalScripts h2 { margin: 0 0 4px; font-size: 15px; }
+  #modalScripts p.sub { margin: 0 0 14px; font-size: 12px; color: #8b949e; }
+  #listaScripts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .scriptItem { display: flex; align-items: center; gap: 8px; border: 1px solid #30363d; border-radius: 8px; padding: 8px 10px; }
+  .scriptItem .nome { flex: 1; font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scriptItem .desc { flex: 1; font-size: 10.5px; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scriptItem button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+  .scriptItem button:hover { border-color: #58a6ff; }
+  .scriptItem button.remover:hover { border-color: #f85149; color: #f85149; }
+  #modalScripts .semScripts { font-size: 12px; color: #6e7681; padding: 8px 0; }
+  #modalScripts .editorBloco { border-top: 1px solid #30363d; padding-top: 12px; }
+  #modalScripts .editorBloco h3 { margin: 0 0 8px; font-size: 12.5px; color: #adbac7; }
+  #modalScripts textarea { width: 100%; height: 160px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; padding: 8px; font-size: 11.5px; font-family: Consolas, "Courier New", monospace; resize: vertical; box-sizing: border-box; }
+  #modalScripts .editorBotoes { display: flex; gap: 8px; margin-top: 8px; }
+  #modalScripts .editorBotoes button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 12.5px; }
+  #modalScripts .editorBotoes button.primary { background: #238636; border-color: #2ea043; }
+  #modalScripts .editorBotoes button:hover { filter: brightness(1.15); }
+  #modalScripts .rodape { display: flex; justify-content: flex-end; margin-top: 14px; }
+  #modalScripts .rodape button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 12.5px; }
+  #statusScripts { font-size: 11px; color: #6e7681; margin-top: 6px; min-height: 14px; }
+
   #btnDoar { background: #7c4a1e !important; border-color: #a86a2f !important; }
   #btnDoar:hover { border-color: #ffb84d !important; }
 
@@ -107,8 +132,9 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO <small id="versao">v1.0.7</small></h1>
+    <h1>✨ Poke DUO <small id="versao">v1.0.8</small></h1>
     <button id="btnContas">👤 Contas</button>
+    <button id="btnScripts" title="Gerenciar scripts estilo Tampermonkey (.user.js)">📜 Scripts</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
     <button id="btnDoar" title="Curtiu o launcher? Considere apoiar :)">☕ Doar um café</button>
@@ -177,6 +203,33 @@
     </div>
   </div>
 
+  <div id="modalScripts">
+    <div class="caixa">
+      <h2>📜 Scripts (estilo Tampermonkey)</h2>
+      <p class="sub">Cole o código de um <code>.user.js</code> ou importe o arquivo do disco. Cada script roda nos
+        dois painéis (Alt+conta 1 e conta 2) com um mini "GM_*" próprio (GM_setValue, GM_getValue, GM_addStyle,
+        GM_registerMenuCommand — este último não faz nada aqui, é só pra não quebrar). Estado (ligado/desligado)
+        é salvo automaticamente.</p>
+
+      <div id="listaScripts"></div>
+
+      <div class="editorBloco">
+        <h3 id="editorTitulo">Adicionar novo script</h3>
+        <textarea id="scriptCodigo" placeholder="Cole aqui o conteúdo do .user.js, ou clique em Importar arquivo…"></textarea>
+        <div class="editorBotoes">
+          <button id="btnImportarArquivo">📂 Importar arquivo…</button>
+          <button id="btnSalvarScript" class="primary">💾 Salvar script</button>
+          <button id="btnCancelarEdicao" style="display:none;">Cancelar edição</button>
+        </div>
+        <div id="statusScripts"></div>
+      </div>
+
+      <div class="rodape">
+        <button id="btnFecharScripts">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalDoacao">
     <div class="caixa">
       <h2>☕ Apoie o Poke DUO</h2>
@@ -235,6 +288,7 @@ function criarWebview(i) {
     tentarAtalhoAnalisadorCacada(i);
     tentarAtalhoRegistroCaptura(i);
     tentarMoverPacoteMenuEventos(i);
+    tentarInjetarScripts(i);
     aplicarZoom(i);
   });
   wv.addEventListener('did-navigate', () => {
@@ -254,6 +308,7 @@ function criarWebview(i) {
     tentarAtalhoAnalisadorCacada(i);
     tentarAtalhoRegistroCaptura(i);
     tentarMoverPacoteMenuEventos(i);
+    tentarInjetarScripts(i);
   });
   return wv;
 }
@@ -829,11 +884,162 @@ function atualizarIconeMax(maximizada) {
   document.getElementById('btnWinMax').textContent = maximizada ? '❐' : '▢';
 }
 
+// ---------- scripts estilo Tampermonkey (.user.js) ----------
+// Cada script vira um objeto { id, nome, descricao, codigo, ativo }. O
+// "codigo" e' o .user.js inteiro (com o bloco ==UserScript==..==/UserScript==),
+// mas na hora de injetar a gente tira esse bloco de metadados (o webview nao
+// entende essa sintaxe) e embrulha o resto com um mini "GM_*" que imita as
+// funcoes mais comuns do Tampermonkey, usando o localStorage do proprio jogo
+// (isolado por conta, ja que cada webview tem sua propria partition).
+let scripts = [];
+let editandoScriptId = null;
+
+function gerarIdScript() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function parseMetaScript(codigo) {
+  const bloco = (codigo.match(/==UserScript==([\s\S]*?)==\/UserScript==/) || [])[1] || '';
+  const pega = (tag) => (bloco.match(new RegExp('@' + tag + '\\s+(.+)')) || [])[1]?.trim();
+  return { nome: pega('name') || 'Script sem nome', descricao: pega('description') || '' };
+}
+
+async function carregarScripts() {
+  const salvo = await window.ppAPI.loadScripts();
+  if (Array.isArray(salvo)) scripts = salvo;
+}
+async function salvarScriptsNoDisco() { await window.ppAPI.saveScripts(scripts); }
+
+function renderListaScripts() {
+  const lista = document.getElementById('listaScripts');
+  if (!scripts.length) {
+    lista.innerHTML = '<div class="semScripts">Nenhum script adicionado ainda.</div>';
+    return;
+  }
+  lista.innerHTML = '';
+  scripts.forEach((s) => {
+    const item = document.createElement('div');
+    item.className = 'scriptItem';
+    item.innerHTML = `
+      <input type="checkbox" ${s.ativo ? 'checked' : ''} title="Ligar/desligar">
+      <span class="nome" title="${s.nome}">${s.nome}</span>
+      <span class="desc" title="${s.descricao || ''}">${s.descricao || ''}</span>
+      <button class="editar">Editar</button>
+      <button class="remover">Remover</button>
+    `;
+    item.querySelector('input').onchange = async (e) => {
+      s.ativo = e.target.checked;
+      await salvarScriptsNoDisco();
+      [0, 1].forEach((i) => tentarInjetarScripts(i));
+    };
+    item.querySelector('.editar').onclick = () => abrirEdicaoScript(s.id);
+    item.querySelector('.remover').onclick = async () => {
+      if (!confirm('Remover o script "' + s.nome + '"?')) return;
+      scripts = scripts.filter((x) => x.id !== s.id);
+      await salvarScriptsNoDisco();
+      renderListaScripts();
+      statusScripts('Removido. (Recarregue os painéis pra ele sumir do jogo, se já tinha rodado.)');
+    };
+    lista.appendChild(item);
+  });
+}
+
+function statusScripts(msg) {
+  const el = document.getElementById('statusScripts');
+  el.textContent = msg;
+  setTimeout(() => { el.textContent = ''; }, 2400);
+}
+
+function abrirEdicaoScript(id) {
+  const s = scripts.find((x) => x.id === id);
+  if (!s) return;
+  editandoScriptId = id;
+  document.getElementById('editorTitulo').textContent = 'Editando: ' + s.nome;
+  document.getElementById('scriptCodigo').value = s.codigo;
+  document.getElementById('btnCancelarEdicao').style.display = '';
+}
+function cancelarEdicaoScript() {
+  editandoScriptId = null;
+  document.getElementById('editorTitulo').textContent = 'Adicionar novo script';
+  document.getElementById('scriptCodigo').value = '';
+  document.getElementById('btnCancelarEdicao').style.display = 'none';
+}
+
+document.getElementById('btnScripts').onclick = async () => {
+  renderListaScripts();
+  document.getElementById('modalScripts').classList.add('on');
+};
+document.getElementById('btnFecharScripts').onclick = () => document.getElementById('modalScripts').classList.remove('on');
+document.getElementById('btnCancelarEdicao').onclick = cancelarEdicaoScript;
+
+document.getElementById('btnImportarArquivo').onclick = async () => {
+  const res = await window.ppAPI.importScriptFile();
+  if (!res) return;
+  document.getElementById('scriptCodigo').value = res.codigo;
+  statusScripts('Importado de ' + res.nomeArquivo + '. Clique em "Salvar script" pra adicionar.');
+};
+
+document.getElementById('btnSalvarScript').onclick = async () => {
+  const codigo = document.getElementById('scriptCodigo').value.trim();
+  if (!codigo) { statusScripts('Cole ou importe um script primeiro.'); return; }
+  const meta = parseMetaScript(codigo);
+
+  if (editandoScriptId) {
+    const s = scripts.find((x) => x.id === editandoScriptId);
+    if (s) { s.codigo = codigo; s.nome = meta.nome; s.descricao = meta.descricao; }
+  } else {
+    scripts.push({ id: gerarIdScript(), nome: meta.nome, descricao: meta.descricao, codigo, ativo: true });
+  }
+  await salvarScriptsNoDisco();
+  cancelarEdicaoScript();
+  renderListaScripts();
+  [0, 1].forEach((i) => tentarInjetarScripts(i));
+  statusScripts('Salvo! Já ativo nos dois painéis (recarregue se o script só roda uma vez no carregamento).');
+};
+
+// remove o bloco de metadados (==UserScript==...==/UserScript==) e embrulha o
+// resto com um GM_* minimo, guardado no localStorage do proprio webview -
+// dados isolados por conta (cada webview tem sua propria partition).
+function scriptWrapInjecao(script) {
+  const corpo = script.codigo.replace(/\/\/\s*==UserScript==[\s\S]*?\/\/\s*==\/UserScript==/, '');
+  const chaveBase = 'gm_' + script.id + '_';
+  return `(function(){
+    try {
+      const __chaveBase = ${JSON.stringify(chaveBase)};
+      const GM_setValue = (k, v) => { try { localStorage.setItem(__chaveBase + k, JSON.stringify(v)); } catch (e) {} };
+      const GM_getValue = (k, d) => { try { const v = localStorage.getItem(__chaveBase + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+      const GM_deleteValue = (k) => { try { localStorage.removeItem(__chaveBase + k); } catch (e) {} };
+      const GM_addStyle = (css) => { const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); return s; };
+      const GM_registerMenuCommand = () => {}; // sem equivalente aqui (nao ha menu de extensao) - so pra nao quebrar
+      const GM_notification = (opts) => { try { window.ppAPI && console.log('[script]', (opts && (opts.text || opts.title)) || opts); } catch (e) {} };
+      const GM_log = (...args) => console.log('[script]', ...args);
+      const GM_xmlhttpRequest = (opts) => {
+        fetch(opts.url, { method: opts.method || 'GET', headers: opts.headers, body: opts.data, credentials: 'include' })
+          .then((r) => r.text().then((responseText) => ({ r, responseText })))
+          .then(({ r, responseText }) => opts.onload && opts.onload({ status: r.status, responseText }))
+          .catch((err) => opts.onerror && opts.onerror(err));
+      };
+      ${corpo}
+    } catch (e) { console.warn('[Poke DUO] erro no script "${script.nome.replace(/"/g, '\\"')}":', e); }
+  })();`;
+}
+
+function tentarInjetarScripts(i) {
+  if (!webviews[i] || !scripts.length) return;
+  scripts.filter((s) => s.ativo).forEach((s) => {
+    webviews[i].executeJavaScript(scriptWrapInjecao(s)).catch(() => {});
+  });
+}
+
 // ---------- carrega contas salvas ----------
 (async () => {
   const salvo = await window.ppAPI.loadCreds();
   if (salvo && Array.isArray(salvo) && salvo.length === 2) contas = salvo;
   atualizarTitulos();
+})();
+
+// ---------- carrega scripts salvos e injeta nos painéis já abertos ----------
+(async () => {
+  await carregarScripts();
+  [0, 1].forEach((i) => tentarInjetarScripts(i));
 })();
 </script>
 </body>
