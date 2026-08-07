@@ -98,6 +98,20 @@ O painel de gerenciar a mina (que mostra os Pokémon trabalhando) ganhou um resk
 **CIDADE** virou um quadradinho com ícone de casinha 🏠, posicionado logo antes do botão
 **GERENCIAR** na mesma linha (sem ficar espalhado pelos cantos do painel).
 
+### 📜 Scripts (estilo Tampermonkey)
+O botão **📜 Scripts** abre um gerenciador de userscripts direto no launcher: cole o conteúdo de
+um `.user.js` (ou importe o arquivo do disco), ligue/desligue cada script individualmente, e ele
+roda nos dois painéis automaticamente sempre que a página carregar. Um mini "GM_\*" próprio
+(`GM_setValue`, `GM_getValue`, `GM_deleteValue`, `GM_addStyle`, `GM_xmlhttpRequest`, `GM_log`)
+cobre as funções mais comuns usadas por userscripts — dados salvos isolados por conta (cada
+painel tem sua própria partition). Scripts ficam salvos em `scripts.json`, na pasta de dados do
+app.
+
+Por padrão, o Poke DUO já vem com o script **PokePixel Market Tooltip**, feito pelo **Wzk**, que
+mostra a genética completa (IVs, natureza, tipos etc.) do Pokémon ao passar o mouse num anúncio
+do mercado do jogo — já vem ligado, e pode ser desligado ou removido normalmente pelo gerenciador
+de scripts.
+
 ### ☕ Doação via Pix
 Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
 projeto.
@@ -152,28 +166,19 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 ## 🧭 Histórico de mudanças
 
 ### v1.0.9
-- Adicionado suporte a **scripts padrão**: qualquer arquivo `.js`/`.user.js`
-  colocado na pasta `default-scripts/` (dentro da pasta do launcher) é
-  carregado automaticamente e já entra ligado na primeira vez que o app
-  roda — ou seja, sempre que ainda não existe um `scripts.json` na pasta de
-  dados do app (primeira instalação, ou depois de limpar os dados). A
-  partir daí ele aparece normal na tela **📜 Scripts** e pode ser
-  desligado, editado ou removido como qualquer script adicionado na mão.
-  Se for removido e o `scripts.json` for apagado depois, ele volta a ser
-  carregado sozinho — pra parar de vir por padrão de vez, é só apagar o
-  arquivo dele dentro de `default-scripts/`.
+- Por padrão, o Poke DUO agora já vem com o script **PokePixel Market
+  Tooltip**, feito pelo **Wzk**, que mostra a genética do Pokémon (IVs,
+  natureza, tipos etc.) ao passar o mouse num anúncio do mercado do jogo.
+- Removida a linha de dica de atalhos que ficava na barra de cima
+  ("Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = ... · ESC = voltar").
+  Os atalhos continuam funcionando normalmente, só não aparecem mais fixos
+  na tela (ficam documentados aqui no README, na seção de atalhos).
 
 ### v1.0.8
 - Adicionado o botão **📜 Scripts**: um gerenciador de scripts estilo
   Tampermonkey, direto no launcher. Cole o conteúdo de um `.user.js` (ou
   importe o arquivo do disco), ligue/desligue cada script individualmente,
   e ele roda nos dois painéis automaticamente sempre que a página carregar.
-  Um mini "GM_\*" próprio (`GM_setValue`, `GM_getValue`, `GM_deleteValue`,
-  `GM_addStyle`, `GM_xmlhttpRequest`, `GM_log`) cobre as funções mais comuns
-  usadas por userscripts — dados salvos isolados por conta (cada painel tem
-  sua própria partition). `GM_registerMenuCommand` não faz nada (não existe
-  menu de extensão aqui), só não quebra o script. Scripts ficam salvos em
-  `scripts.json`, na pasta de dados do app.
 
 ### v1.0.7
 - Adicionado atalho do **Analisador de Caçada** direto na barra de topo (antes só dava pra
