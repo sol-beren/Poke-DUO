@@ -4,7 +4,7 @@
 
 Cada conta roda no seu próprio perfil de navegador, completamente isolado (o Electron separa por `partition`), então cookies, sessão e login de uma conta nunca se misturam com os da outra. Feito pra quem joga com 2 contas em paralelo e cansou de precisar de duas janelas de navegador espalhadas pela tela, logando manualmente em cada uma toda vez.
 
-![status](https://img.shields.io/badge/vers%C3%A3o-1.0.7-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
+![status](https://img.shields.io/badge/vers%C3%A3o-1.0.9-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
 
 ---
 
@@ -151,11 +151,29 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 
 ## 🧭 Histórico de mudanças
 
+### v1.0.9
+- Adicionado suporte a **scripts padrão**: qualquer arquivo `.js`/`.user.js`
+  colocado na pasta `default-scripts/` (dentro da pasta do launcher) é
+  carregado automaticamente e já entra ligado na primeira vez que o app
+  roda — ou seja, sempre que ainda não existe um `scripts.json` na pasta de
+  dados do app (primeira instalação, ou depois de limpar os dados). A
+  partir daí ele aparece normal na tela **📜 Scripts** e pode ser
+  desligado, editado ou removido como qualquer script adicionado na mão.
+  Se for removido e o `scripts.json` for apagado depois, ele volta a ser
+  carregado sozinho — pra parar de vir por padrão de vez, é só apagar o
+  arquivo dele dentro de `default-scripts/`.
+
 ### v1.0.8
 - Adicionado o botão **📜 Scripts**: um gerenciador de scripts estilo
   Tampermonkey, direto no launcher. Cole o conteúdo de um `.user.js` (ou
   importe o arquivo do disco), ligue/desligue cada script individualmente,
   e ele roda nos dois painéis automaticamente sempre que a página carregar.
+  Um mini "GM_\*" próprio (`GM_setValue`, `GM_getValue`, `GM_deleteValue`,
+  `GM_addStyle`, `GM_xmlhttpRequest`, `GM_log`) cobre as funções mais comuns
+  usadas por userscripts — dados salvos isolados por conta (cada painel tem
+  sua própria partition). `GM_registerMenuCommand` não faz nada (não existe
+  menu de extensão aqui), só não quebra o script. Scripts ficam salvos em
+  `scripts.json`, na pasta de dados do app.
 
 ### v1.0.7
 - Adicionado atalho do **Analisador de Caçada** direto na barra de topo (antes só dava pra

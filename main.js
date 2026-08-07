@@ -98,8 +98,35 @@ ipcMain.handle('creds:save', (_e, contas) => {
 // de criptografia, so persistir entre aberturas do launcher.
 const scriptsFile = () => path.join(app.getPath('userData'), 'scripts.json');
 
+// Scripts que vem instalados por padrao (so na primeira vez, quando ainda nao
+// existe scripts.json - se o usuario remover um deles depois, fica removido).
+function carregarScriptsPadrao() {
+  const pasta = path.join(__dirname, 'default-scripts');
+  let arquivos = [];
+  try { arquivos = fs.readdirSync(pasta).filter((f) => f.endsWith('.js')); } catch { return []; }
+
+  return arquivos.map((arquivo) => {
+    const codigo = fs.readFileSync(path.join(pasta, arquivo), 'utf8');
+    const bloco = (codigo.match(/==UserScript==([\s\S]*?)==\/UserScript==/) || [])[1] || '';
+    const pega = (tag) => (bloco.match(new RegExp('@' + tag + '\\s+(.+)')) || [])[1]?.trim();
+    return {
+      id: 'default-' + arquivo.replace(/\.user\.js$|\.js$/i, ''),
+      nome: pega('name') || arquivo,
+      descricao: pega('description') || '',
+      codigo,
+      ativo: true,
+    };
+  });
+}
+
 ipcMain.handle('scripts:load', () => {
-  try { return JSON.parse(fs.readFileSync(scriptsFile(), 'utf8')); } catch { return []; }
+  try { return JSON.parse(fs.readFileSync(scriptsFile(), 'utf8')); }
+  catch {
+    // primeira vez rodando (ainda nao existe scripts.json) - comeca com os padrao
+    const padrao = carregarScriptsPadrao();
+    try { fs.writeFileSync(scriptsFile(), JSON.stringify(padrao, null, 2)); } catch {}
+    return padrao;
+  }
 });
 
 ipcMain.handle('scripts:save', (_e, scripts) => {

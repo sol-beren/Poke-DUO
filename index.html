@@ -16,9 +16,8 @@
   #topbar h1 small#versao { font-size: 9px; font-weight: 400; color: #6e7681; margin-left: 4px; }
   #topbar button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 11px; -webkit-app-region: no-drag; }
   #topbar button:hover { border-color: #58a6ff; }
-  #topbar .hint { margin-left: auto; font-size: 10px; color: #6e7681; }
 
-  #winCtrls { display: flex; align-items: center; gap: 2px; margin-left: 10px; flex: none; -webkit-app-region: no-drag; }
+  #winCtrls { display: flex; align-items: center; gap: 2px; margin-left: auto; flex: none; -webkit-app-region: no-drag; }
   #winCtrls button { background: transparent; border: none; border-radius: 4px; color: #adbac7; width: 30px; height: 24px; padding: 0; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
   #winCtrls button:hover { background: #30363d; }
   #winCtrls #btnWinFechar:hover { background: #da3633; color: #fff; }
@@ -132,14 +131,13 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO <small id="versao">v1.0.8</small></h1>
+    <h1>✨ Poke DUO <small id="versao">v1.0.9</small></h1>
     <button id="btnContas">👤 Contas</button>
     <button id="btnScripts" title="Gerenciar scripts estilo Tampermonkey (.user.js)">📜 Scripts</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
     <button id="btnRecarregar">⟳ Recarregar</button>
     <button id="btnDoar" title="Curtiu o launcher? Considere apoiar :)">☕ Doar um café</button>
     <button id="btnOcultarUI" title="Modo tela cheia: esconde toda a interface, só ficam os jogos (ESC ou Ctrl+H pra voltar)">🙈</button>
-    <span class="hint">Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = modo tela cheia · Ctrl+B = botão de servidor · ESC = voltar</span>
     <div id="winCtrls">
       <button id="btnWinMin" title="Minimizar">─</button>
       <button id="btnWinMax" title="Maximizar/Restaurar">▢</button>
