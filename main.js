@@ -192,7 +192,7 @@ app.whenReady().then(() => {
                    // cinza do SO que sobrava no topo mesmo com o autoHideMenuBar.
     autoHideMenuBar: true,
     backgroundColor: '#0d1117',
-    webPreferences: { webviewTag: true, preload: path.join(__dirname, 'preload.js') }
+    webPreferences: { webviewTag: true, preload: path.join(__dirname, 'preload.js'), backgroundThrottling: false }
   });
   win.loadFile(path.join(__dirname, 'index.html'));
 

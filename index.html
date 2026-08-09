@@ -131,7 +131,7 @@
 <body>
 
   <div id="topbar">
-    <h1>✨ Poke DUO <small id="versao">v1.0.9</small></h1>
+    <h1>✨ Poke DUO <small id="versao">v1.1.0</small></h1>
     <button id="btnContas">👤 Contas</button>
     <button id="btnScripts" title="Gerenciar scripts estilo Tampermonkey (.user.js)">📜 Scripts</button>
     <button id="btnLoginAgora">▶ Logar as duas</button>
@@ -268,6 +268,9 @@ function aplicarZoom(i) {
 function criarWebview(i) {
   const panel = grid.children[i];
   const wv = document.createElement('webview');
+  // sem isto o Chromium estrangula (e depois congela) a pagina em segundo plano: com o app
+  // minimizado ou o PC sem uso o jogo parava no meio do combate ate alguem voltar ao PC
+  wv.setAttribute('webpreferences', 'backgroundThrottling=no');
   wv.setAttribute('partition', 'persist:pp-conta' + (i + 1));
   wv.setAttribute('src', GAME_URL);
   wv.setAttribute('allowpopups', '');
@@ -313,6 +316,16 @@ function criarWebview(i) {
 
 // ---------- cria os 2 paineis ----------
 [...grid.children].forEach((panel, i) => criarWebview(i));
+
+// Keepalive: um toque barato em cada painel, de 30 em 30s, MESMO com a janela minimizada
+// ou escondida. Sozinho o backgroundThrottling=no ja resolve; isto e a rede de seguranca pra
+// quem deixa o PC de lado (evita o jogo travar no meio do combate com o popup preso).
+setInterval(() => {
+  webviews.forEach(w => {
+    if (!w) return;
+    try { w.executeJavaScript('void 0').catch(() => {}); } catch {}
+  });
+}, 30000);
 
 // Reset forçado: quando o jogo trava e nem "recarregar" (que só pede pro mesmo
 // processo já pendurado navegar de novo) resolve. Em vez de só recarregar,
@@ -438,12 +451,32 @@ function tentarLoginAutomatico(i) {
   webviews[i].executeJavaScript(scriptLogin(c.email, c.senha)).catch(() => {});
 }
 
+// ---------- sensor unico de mudancas na tela do jogo ----------
+// Antes, cada ajuste visual abaixo (discord, banner, botao de servidor, elementos
+// arrastaveis, atalhos etc.) criava seu proprio MutationObserver vigiando a pagina
+// inteira (8 no total, x2 contas = 16 rodando ao mesmo tempo). Como o jogo muda a
+// tela o tempo todo (combate, HP, etc.), isso disparava 8 verificacoes repetidas a
+// cada mudanca. Agora e' so 1 sensor por painel: cada ajuste so se registra nele
+// (window.__ppObsCallbacks), e o sensor unico chama todo mundo de uma vez so.
+// O trecho abaixo e' colado no comeco de cada script que precisa ficar de olho na
+// tela, e e' seguro chamar varias vezes (so cria o sensor se ainda nao existir).
+const OBS_BOOTSTRAP = `
+    if (!window.__ppObsCallbacks) window.__ppObsCallbacks = {};
+    if (!window.__ppUnifiedObs) {
+      window.__ppUnifiedObs = new MutationObserver(function () {
+        for (const k in window.__ppObsCallbacks) { try { window.__ppObsCallbacks[k](); } catch (e) {} }
+      });
+      window.__ppUnifiedObs.observe(document.body, { childList: true, subtree: true });
+    }
+`;
+
 // ---------- ocultar o link do Discord da interface ----------
 // Só esconde visualmente (display:none) o bloco que contém "discord.gg" — não clica
 // em nada nem simula interação, é a mesma ideia de um bloqueador de anúncio. Fica
 // observando a página pra esconder de novo se ela recriar o elemento.
 function scriptOcultarDiscord() {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     function ocultar() {
       const textos = [...document.querySelectorAll('body *')]
         .filter(el => el.children.length === 0 && /discord\\.gg/i.test(el.textContent || ''));
@@ -458,10 +491,7 @@ function scriptOcultarDiscord() {
       });
     }
     ocultar();
-    if (!window.__ppDiscordObs) {
-      window.__ppDiscordObs = new MutationObserver(ocultar);
-      window.__ppDiscordObs.observe(document.body, { childList: true, subtree: true });
-    }
+    window.__ppObsCallbacks['discord'] = ocultar;
   })();`;
 }
 function tentarOcultarDiscord(i) {
@@ -475,6 +505,7 @@ function tentarOcultarDiscord(i) {
 // caso o jogo troque o nome da classe no futuro.
 function scriptOcultarBanner() {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     function ocultar() {
       document.querySelectorAll('.pokeidle-promo-banner').forEach(el => {
         el.style.setProperty('display', 'none', 'important');
@@ -485,10 +516,7 @@ function scriptOcultarBanner() {
       });
     }
     ocultar();
-    if (!window.__ppBannerObs) {
-      window.__ppBannerObs = new MutationObserver(ocultar);
-      window.__ppBannerObs.observe(document.body, { childList: true, subtree: true });
-    }
+    window.__ppObsCallbacks['banner'] = ocultar;
   })();`;
 }
 function tentarOcultarBanner(i) {
@@ -503,6 +531,7 @@ function tentarOcultarBanner(i) {
 let servidorBtnEscondido = true;
 function scriptServerBtn(esconder) {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     window.__ppServerBtnEsconder = ${esconder};
     function aplicar() {
       document.querySelectorAll('.world-servers-fab').forEach(el => {
@@ -510,10 +539,7 @@ function scriptServerBtn(esconder) {
       });
     }
     aplicar();
-    if (!window.__ppServerBtnObs) {
-      window.__ppServerBtnObs = new MutationObserver(aplicar);
-      window.__ppServerBtnObs.observe(document.body, { childList: true, subtree: true });
-    }
+    window.__ppObsCallbacks['serverBtn'] = aplicar;
   })();`;
 }
 function tentarServerBtn(i) {
@@ -534,6 +560,7 @@ function alternarServerBtn() {
 // de novo, pro caso do jogo recriar o elemento em outra tela.
 function scriptElementoMovel(seletor, chaveStorage) {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     function setup() {
       const el = document.querySelector(${JSON.stringify(seletor)});
       if (!el || el.__ppMovel) return;
@@ -612,12 +639,7 @@ function scriptElementoMovel(seletor, chaveStorage) {
       }, { passive: false });
     }
     setup();
-    if (!window.__ppMovelObs) window.__ppMovelObs = {};
-    if (!window.__ppMovelObs[${JSON.stringify(chaveStorage)}]) {
-      const obs = new MutationObserver(setup);
-      obs.observe(document.body, { childList: true, subtree: true });
-      window.__ppMovelObs[${JSON.stringify(chaveStorage)}] = obs;
-    }
+    window.__ppObsCallbacks['movel_' + ${JSON.stringify(chaveStorage)}] = setup;
   })();`;
 }
 function tentarBarraArrastavel(i) {
@@ -666,8 +688,8 @@ function tentarEstilizarHudMina(i) {
 // a barra ou o dropdown do zero.
 function scriptAtalhoAnalisadorCacada() {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     document.getElementById('pp-btn-analisador')?.remove();
-    if (window.__ppAnalisadorObs) { window.__ppAnalisadorObs.disconnect(); window.__ppAnalisadorObs = null; }
     function setup() {
       const barra = document.querySelector('.pokeidle-top-toolbar');
       const configBtn = barra && barra.querySelector('.pokeidle-top-toolbar__btn[data-menu-id="settings"]');
@@ -706,9 +728,7 @@ function scriptAtalhoAnalisadorCacada() {
       }
     }
     setup();
-    const obs = new MutationObserver(setup);
-    obs.observe(document.body, { childList: true, subtree: true });
-    window.__ppAnalisadorObs = obs;
+    window.__ppObsCallbacks['analisador'] = setup;
   })();`;
 }
 function tentarAtalhoAnalisadorCacada(i) {
@@ -721,8 +741,8 @@ function tentarAtalhoAnalisadorCacada(i) {
 // dentro do dropdown, pra não ficar duplicado.
 function scriptAtalhoRegistroCaptura() {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     document.getElementById('pp-btn-captura')?.remove();
-    if (window.__ppCapturaObs) { window.__ppCapturaObs.disconnect(); window.__ppCapturaObs = null; }
     function setup() {
       const barra = document.querySelector('.pokeidle-top-toolbar');
       const configBtn = barra && barra.querySelector('.pokeidle-top-toolbar__btn[data-menu-id="settings"]');
@@ -760,9 +780,7 @@ function scriptAtalhoRegistroCaptura() {
       }
     }
     setup();
-    const obs = new MutationObserver(setup);
-    obs.observe(document.body, { childList: true, subtree: true });
-    window.__ppCapturaObs = obs;
+    window.__ppObsCallbacks['captura'] = setup;
   })();`;
 }
 function tentarAtalhoRegistroCaptura(i) {
@@ -782,6 +800,7 @@ function tentarAtalhoRegistroCaptura(i) {
 // dropdown pelo conteúdo (procura o item que já tem "Ranqueado"/"Maestria").
 function scriptMoverPacoteMenuEventos() {
   return `(function(){
+    ${OBS_BOOTSTRAP}
     function encontrarDropdownEventos() {
       const porId = document.querySelector('#pokeidle-toolbar-menu-events');
       if (porId) return porId;
@@ -813,11 +832,7 @@ function scriptMoverPacoteMenuEventos() {
       }
     }
     setup();
-    if (!window.__ppPacoteObs) {
-      const obs = new MutationObserver(setup);
-      obs.observe(document.body, { childList: true, subtree: true });
-      window.__ppPacoteObs = obs;
-    }
+    window.__ppObsCallbacks['pacote'] = setup;
   })();`;
 }
 function tentarMoverPacoteMenuEventos(i) {

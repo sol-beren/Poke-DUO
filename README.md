@@ -4,7 +4,7 @@
 
 Cada conta roda no seu próprio perfil de navegador, completamente isolado (o Electron separa por `partition`), então cookies, sessão e login de uma conta nunca se misturam com os da outra. Feito pra quem joga com 2 contas em paralelo e cansou de precisar de duas janelas de navegador espalhadas pela tela, logando manualmente em cada uma toda vez.
 
-![status](https://img.shields.io/badge/vers%C3%A3o-1.0.9-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
+![status](https://img.shields.io/badge/vers%C3%A3o-1.1.0-58a6ff) ![plataforma](https://img.shields.io/badge/plataforma-Windows-0d1117) ![feito com](https://img.shields.io/badge/feito%20com-Electron-2ea043)
 
 ---
 
@@ -68,6 +68,12 @@ fácil alternar pra outros programas. Uma linha bem fina aparece entre os dois p
 só pra deixar claro que são duas telas separadas. `ESC` ou `Ctrl+H` de novo trazem a interface de
 volta.
 
+### 🧠 Não trava mais com o PC parado
+O Chromium congela páginas em segundo plano por padrão — com a janela minimizada (ou o PC sem
+uso), o jogo podia parar no meio do combate e a conta ficava travada até alguém voltar ao PC.
+Isso foi corrigido: os dois painéis nunca são congelados por estarem em segundo plano, e um toque
+leve a cada 30 segundos mantém os painéis vivos mesmo com a janela do app escondida.
+
 ### ⏻ Reset forçado por painel
 Às vezes o site do jogo trava de um jeito que nem "recarregar" resolve, porque o processo
 travado continua sendo o mesmo. O botão **⏻** de cada painel vai além do reload comum: destrói o
@@ -97,20 +103,6 @@ Elementos liberados até agora:
 O painel de gerenciar a mina (que mostra os Pokémon trabalhando) ganhou um reskin: o botão
 **CIDADE** virou um quadradinho com ícone de casinha 🏠, posicionado logo antes do botão
 **GERENCIAR** na mesma linha (sem ficar espalhado pelos cantos do painel).
-
-### 📜 Scripts (estilo Tampermonkey)
-O botão **📜 Scripts** abre um gerenciador de userscripts direto no launcher: cole o conteúdo de
-um `.user.js` (ou importe o arquivo do disco), ligue/desligue cada script individualmente, e ele
-roda nos dois painéis automaticamente sempre que a página carregar. Um mini "GM_\*" próprio
-(`GM_setValue`, `GM_getValue`, `GM_deleteValue`, `GM_addStyle`, `GM_xmlhttpRequest`, `GM_log`)
-cobre as funções mais comuns usadas por userscripts — dados salvos isolados por conta (cada
-painel tem sua própria partition). Scripts ficam salvos em `scripts.json`, na pasta de dados do
-app.
-
-Por padrão, o Poke DUO já vem com o script **PokePixel Market Tooltip**, feito pelo **Wzk**, que
-mostra a genética completa (IVs, natureza, tipos etc.) do Pokémon ao passar o mouse num anúncio
-do mercado do jogo — já vem ligado, e pode ser desligado ou removido normalmente pelo gerenciador
-de scripts.
 
 ### ☕ Doação via Pix
 Botão **☕ Doar um café** abre um QR Code e o código Pix copia-e-cola, pra quem quiser apoiar o
@@ -165,20 +157,41 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 
 ## 🧭 Histórico de mudanças
 
+### v1.1.0
+- **Corrigido: contas travando com o PC sozinho.** O Chromium congela páginas em segundo plano,
+  e os painéis do jogo nasciam sem essa trava desligada. Com o app minimizado (ou o PC sem uso),
+  o jogo parava no meio do combate e a conta ficava travada até alguém voltar ao PC. Agora os
+  painéis nunca são congelados por estarem em segundo plano, e um toque leve a cada 30 segundos
+  mantém os painéis vivos mesmo com a janela do app escondida.
+- **Otimização interna:** os ajustes automáticos na tela do jogo (esconder Discord/banner,
+  botão de servidor, elementos arrastáveis, atalhos de Analisador/Registro/Pacote) usavam 8
+  sensores de mudança (`MutationObserver`) independentes por painel, cada um vigiando a página
+  inteira sozinho. Agora é só 1 sensor por painel, compartilhado entre todos os ajustes — mesmo
+  resultado na tela, com bem menos processamento rodando no fundo o tempo todo.
+
 ### v1.0.9
-- Por padrão, o Poke DUO agora já vem com o script **PokePixel Market
-  Tooltip**, feito pelo **Wzk**, que mostra a genética do Pokémon (IVs,
-  natureza, tipos etc.) ao passar o mouse num anúncio do mercado do jogo.
-- Removida a linha de dica de atalhos que ficava na barra de cima
-  ("Ctrl+1 / Ctrl+2 = tela cheia do painel · Ctrl+H = ... · ESC = voltar").
-  Os atalhos continuam funcionando normalmente, só não aparecem mais fixos
-  na tela (ficam documentados aqui no README, na seção de atalhos).
+- Adicionado suporte a **scripts padrão**: qualquer arquivo `.js`/`.user.js`
+  colocado na pasta `default-scripts/` (dentro da pasta do launcher) é
+  carregado automaticamente e já entra ligado na primeira vez que o app
+  roda — ou seja, sempre que ainda não existe um `scripts.json` na pasta de
+  dados do app (primeira instalação, ou depois de limpar os dados). A
+  partir daí ele aparece normal na tela **📜 Scripts** e pode ser
+  desligado, editado ou removido como qualquer script adicionado na mão.
+  Se for removido e o `scripts.json` for apagado depois, ele volta a ser
+  carregado sozinho — pra parar de vir por padrão de vez, é só apagar o
+  arquivo dele dentro de `default-scripts/`.
 
 ### v1.0.8
 - Adicionado o botão **📜 Scripts**: um gerenciador de scripts estilo
   Tampermonkey, direto no launcher. Cole o conteúdo de um `.user.js` (ou
   importe o arquivo do disco), ligue/desligue cada script individualmente,
   e ele roda nos dois painéis automaticamente sempre que a página carregar.
+  Um mini "GM_\*" próprio (`GM_setValue`, `GM_getValue`, `GM_deleteValue`,
+  `GM_addStyle`, `GM_xmlhttpRequest`, `GM_log`) cobre as funções mais comuns
+  usadas por userscripts — dados salvos isolados por conta (cada painel tem
+  sua própria partition). `GM_registerMenuCommand` não faz nada (não existe
+  menu de extensão aqui), só não quebra o script. Scripts ficam salvos em
+  `scripts.json`, na pasta de dados do app.
 
 ### v1.0.7
 - Adicionado atalho do **Analisador de Caçada** direto na barra de topo (antes só dava pra
