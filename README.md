@@ -69,10 +69,11 @@ só pra deixar claro que são duas telas separadas. `ESC` ou `Ctrl+H` de novo tr
 volta.
 
 ### 🧠 Não trava mais com o PC parado
-O Chromium congela páginas em segundo plano por padrão — com a janela minimizada (ou o PC sem
-uso), o jogo podia parar no meio do combate e a conta ficava travada até alguém voltar ao PC.
-Isso foi corrigido: os dois painéis nunca são congelados por estarem em segundo plano, e um toque
-leve a cada 30 segundos mantém os painéis vivos mesmo com a janela do app escondida.
+Navegadores baseados em Chromium costumam desacelerar páginas que ficam fora de foco, pra
+economizar recursos — e isso valia pros painéis do jogo também. Na prática: deixando o launcher
+minimizado ou o PC parado por um tempo, o combate podia travar no meio e a conta ficava presa até
+alguém voltar. Agora esse comportamento fica desligado nos dois painéis o tempo todo, com um
+pingo de atividade a cada 30 segundos garantindo que continuem funcionando mesmo escondidos.
 
 ### ⏻ Reset forçado por painel
 Às vezes o site do jogo trava de um jeito que nem "recarregar" resolve, porque o processo
@@ -158,11 +159,12 @@ botões próprios de minimizar, maximizar e fechar no canto direito.
 ## 🧭 Histórico de mudanças
 
 ### v1.1.0
-- **Corrigido: contas travando com o PC sozinho.** O Chromium congela páginas em segundo plano,
-  e os painéis do jogo nasciam sem essa trava desligada. Com o app minimizado (ou o PC sem uso),
-  o jogo parava no meio do combate e a conta ficava travada até alguém voltar ao PC. Agora os
-  painéis nunca são congelados por estarem em segundo plano, e um toque leve a cada 30 segundos
-  mantém os painéis vivos mesmo com a janela do app escondida.
+- **Corrigido: painéis congelando quando o PC ficava parado.** Por padrão, o Chromium reduz o
+  processamento de páginas fora de foco pra economizar recursos — e essa redução não estava
+  desligada nos painéis do jogo. Resultado: com o launcher minimizado ou o PC sem interação por
+  um tempo, o combate podia parar no meio e a conta ficava presa até alguém voltar a usar o
+  computador. Agora essa redução fica desativada nos dois painéis o tempo todo, e um pinguinho de
+  atividade a cada 30 segundos garante que eles continuem rodando mesmo com a janela minimizada.
 - **Otimização interna:** os ajustes automáticos na tela do jogo (esconder Discord/banner,
   botão de servidor, elementos arrastáveis, atalhos de Analisador/Registro/Pacote) usavam 8
   sensores de mudança (`MutationObserver`) independentes por painel, cada um vigiando a página
